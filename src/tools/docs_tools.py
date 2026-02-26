@@ -4,21 +4,18 @@
 
 import json
 import logging
-import os
 import time
 from typing import Any
-
-import requests
 from langchain.tools import tool
 from langsmith.run_helpers import get_current_run_tree
 from rapidfuzz import fuzz
 
 from src.tools.redis import RedisCache
+from src.tools.tavily_tools import tavily_search
 
 logger = logging.getLogger(__name__)
 
 # Configuration
-MINTLIFY_API_URL = os.getenv("MINTLIFY_API_URL")
 DEFAULT_PAGE_SIZE = 3
 MAX_PAGE_SIZE = 10
 MAX_RETRIES = 3
@@ -173,15 +170,6 @@ def clear_cache() -> None:
             pass
 
 
-def _get_api_key() -> str:
-    if not MINTLIFY_API_URL:
-        raise ValueError("MINTLIFY_API_URL not configured")
-    api_key = os.getenv("MINTLIFY_API_KEY")
-    if not api_key:
-        raise ValueError("MINTLIFY_API_KEY not found in environment")
-    return api_key
-
-
 def _track_docs_for_langsmith(urls: list[str]) -> None:
     """Track retrieved doc URLs in LangSmith run metadata."""
     if not urls:
@@ -207,7 +195,7 @@ def _track_docs_for_langsmith(urls: list[str]) -> None:
 
 
 def _format_search_results(results: list[dict[str, Any]]) -> str:
-    """Format search results into readable text."""
+    """Format Tavily search results into readable text."""
     if not results:
         return "No results found."
 
@@ -215,13 +203,11 @@ def _format_search_results(results: list[dict[str, Any]]) -> str:
     urls = []
 
     for i, result in enumerate(results, 1):
-        metadata = result.get("metadata", {})
-        title = metadata.get("title", "Untitled")
-        path = result.get("path", "")
-        content = result.get("content", "")
-        url = f"https://docs.langchain.com{path}" if path else "N/A"
+        title = result.get("title") or "Untitled"
+        url = result.get("url") or "N/A"
+        content = result.get("content") or ""
 
-        if path:
+        if url != "N/A":
             urls.append(url)
 
         formatted.append(
@@ -241,32 +227,22 @@ def _search_docs_api(
     version: str | None = None,
     language: str | None = None,
 ) -> str:
-    """Execute documentation search via Mintlify API."""
-    headers = {
-        "Authorization": f"Bearer {_get_api_key()}",
-        "Content-Type": "application/json",
-    }
-
-    payload: dict[str, Any] = {"query": query, "pageSize": page_size}
-    if version or language:
-        payload["filter"] = {}
-        if version:
-            payload["filter"]["version"] = version
-        if language:
-            payload["filter"]["language"] = language
+    """Execute documentation search via Tavily Search API."""
+    search_query = query.strip()
+    if language:
+        search_query = f"{search_query} {language}"
+    if version:
+        search_query = f"{search_query} {version}"
 
     _increment_metric(METRIC_API_REQUESTS)
 
-    response = requests.post(MINTLIFY_API_URL, json=payload, headers=headers, timeout=30)
-    response.raise_for_status()
+    results = tavily_search(
+        search_query,
+        max_results=page_size,
+        include_domains=["docs.langchain.com"],
+    )
 
-    data = response.json()
-    if not isinstance(data, list):
-        if isinstance(data, dict) and (error := data.get("error") or data.get("message")):
-            raise ValueError(f"Mintlify API error: {error}")
-        data = []
-
-    return _format_search_results(data)
+    return _format_search_results(results)
 
 
 @tool

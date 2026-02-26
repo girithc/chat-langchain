@@ -16,8 +16,8 @@ This is a documentation assistant agent that helps answer questions about LangCh
 
 ## Features
 
-- **Documentation Search** - Searches official LangChain docs
-- **Support KB** - Searches the Pylon knowledge base for known issues
+- **Documentation Search** - Searches official LangChain docs via Tavily
+- **Support KB** - Searches support.langchain.com via Tavily
 - **Link Validation** - Verifies URLs before including in responses
 - **Guardrails** - Filters off-topic queries
 
@@ -56,8 +56,7 @@ cp .env.example .env
 | Variable | Description |
 |----------|-------------|
 | `ANTHROPIC_API_KEY` | Anthropic API key (or use another provider) |
-| `MINTLIFY_API_KEY` | Mintlify API key for docs search |
-| `PYLON_API_KEY` | Pylon API key for support KB |
+| `TAVILY_API_KEY` | Tavily API key for docs + support search |
 
 ### Running Locally
 
@@ -96,8 +95,8 @@ Open LangGraph Studio: <https://smith.langchain.com/studio/?baseUrl=http://127.0
 The agent uses a docs-first research strategy:
 
 1. **Guardrails Check** - Validates the query is LangChain-related
-2. **Documentation Search** - Searches official docs via Mintlify
-3. **Knowledge Base** - Searches Pylon for known issues/solutions
+2. **Documentation Search** - Searches official docs via Tavily
+3. **Knowledge Base** - Searches support.langchain.com via Tavily
 4. **Link Validation** - Verifies any URLs before including them
 5. **Response Generation** - Synthesizes a helpful answer
 

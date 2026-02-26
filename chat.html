@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat LangChain — Local</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Marked.js for Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-tertiary: #1a1a28;
+      --bg-input: #1e1e2e;
+      --surface: #232336;
+      --border: #2a2a40;
+      --border-focus: #6c63ff;
+      --text-primary: #e8e8f0;
+      --text-secondary: #9494b0;
+      --text-muted: #6a6a85;
+      --accent: #6c63ff;
+      --accent-hover: #7b73ff;
+      --accent-glow: rgba(108, 99, 255, 0.25);
+      --user-bubble: linear-gradient(135deg, #6c63ff 0%, #5a4fff 100%);
+      --ai-bubble: #1a1a28;
+      --success: #4ecdc4;
+      --error: #ff6b6b;
+      --code-bg: #0d0d17;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ───── Header ───── */
+    .header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-secondary);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      backdrop-filter: blur(12px);
+    }
+
+    .header-logo {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--user-bubble);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 16px; color: #fff;
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #e8e8f0, #9494b0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-badge {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(78, 205, 196, 0.12);
+      color: var(--success);
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+
+    .header-spacer { flex: 1; }
+
+    .new-chat-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .new-chat-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(108, 99, 255, 0.06);
+    }
+
+    /* ───── Messages Area ───── */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 0;
+      scroll-behavior: smooth;
+    }
+
+    .messages::-webkit-scrollbar { width: 6px; }
+    .messages::-webkit-scrollbar-track { background: transparent; }
+    .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+
+    .message-row {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      gap: 14px;
+      margin-bottom: 24px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .avatar {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .avatar-user {
+      background: var(--user-bubble);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .avatar-ai {
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+
+    .msg-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .msg-label {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-secondary);
+    }
+
+    .msg-body {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text-primary);
+    }
+
+    .msg-body p { margin-bottom: 12px; }
+    .msg-body p:last-child { margin-bottom: 0; }
+    .msg-body ul, .msg-body ol { padding-left: 20px; margin-bottom: 12px; }
+    .msg-body li { margin-bottom: 4px; }
+    .msg-body a { color: var(--accent); text-decoration: none; }
+    .msg-body a:hover { text-decoration: underline; }
+
+    .msg-body code {
+      background: var(--code-bg);
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 13px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      border: 1px solid var(--border);
+    }
+
+    .msg-body pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      overflow-x: auto;
+      margin-bottom: 12px;
+    }
+
+    .msg-body pre code {
+      background: none;
+      padding: 0;
+      border: none;
+      font-size: 13px;
+    }
+
+    /* ───── Thinking Indicator ───── */
+    .thinking {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .thinking-dots span {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: inline-block;
+      animation: bounce 1.4s infinite both;
+    }
+    .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* ───── Welcome ───── */
+    .welcome {
+      max-width: 600px;
+      margin: 80px auto;
+      text-align: center;
+      padding: 0 24px;
+    }
+
+    .welcome-icon {
+      width: 64px; height: 64px;
+      border-radius: 18px;
+      background: var(--user-bubble);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 24px;
+      box-shadow: 0 8px 32px var(--accent-glow);
+    }
+
+    .welcome h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #e8e8f0, #b0b0d0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .welcome p {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    .suggestions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .suggestion {
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+      line-height: 1.4;
+    }
+
+    .suggestion:hover {
+      border-color: var(--accent);
+      color: var(--text-primary);
+      background: rgba(108, 99, 255, 0.06);
+      transform: translateY(-1px);
+    }
+
+    /* ───── Input Area ───── */
+    .input-area {
+      flex-shrink: 0;
+      padding: 16px 24px 24px;
+      background: var(--bg-primary);
+    }
+
+    .input-wrapper {
+      max-width: 780px;
+      margin: 0 auto;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .input-box {
+      flex: 1;
+      position: relative;
+    }
+
+    .input-box textarea {
+      width: 100%;
+      padding: 14px 18px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text-primary);
+      font-size: 15px;
+      font-family: inherit;
+      line-height: 1.5;
+      resize: none;
+      outline: none;
+      min-height: 52px;
+      max-height: 200px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-box textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    .input-box textarea:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .send-btn {
+      width: 48px; height: 48px;
+      border-radius: 14px;
+      border: none;
+      background: var(--user-bubble);
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      box-shadow: 0 4px 16px var(--accent-glow);
+      flex-shrink: 0;
+    }
+
+    .send-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px var(--accent-glow);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .input-hint {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 8px;
+      max-width: 780px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ───── Error Toast ───── */
+    .error-toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2a1520;
+      border: 1px solid var(--error);
+      color: var(--error);
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      z-index: 100;
+      animation: fadeIn 0.3s ease;
+      max-width: 500px;
+    }
+
+    /* ───── Tool Calls ───── */
+    .tool-call {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: rgba(108, 99, 255, 0.08);
+      border: 1px solid rgba(108, 99, 255, 0.15);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--accent);
+      margin-bottom: 8px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    .tool-call .tool-icon { font-size: 14px; }
+
+    .tool-calls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    /* ───── Message Actions ───── */
+    .msg-actions {
+      margin-top: 12px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .deploy-btn {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(108, 99, 255, 0.35);
+      background: rgba(108, 99, 255, 0.12);
+      color: var(--text-primary);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .deploy-btn:hover {
+      border-color: var(--accent);
+      background: rgba(108, 99, 255, 0.2);
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(108, 99, 255, 0.18);
+    }
+
+    @media (max-width: 600px) {
+      .suggestions { grid-template-columns: 1fr; }
+      .welcome h1 { font-size: 22px; }
+      .header-badge { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-logo">🦜</div>
+    <div class="header-title">Chat LangChain</div>
+    <div class="header-badge">● Local Dev</div>
+    <div class="header-spacer"></div>
+    <button class="new-chat-btn" onclick="newChat()">+ New Chat</button>
+  </div>
+
+  <!-- Messages -->
+  <div class="messages" id="messages">
+    <div class="welcome" id="welcome">
+      <div class="welcome-icon">🦜</div>
+      <h1>Chat LangChain</h1>
+      <p>Ask anything about LangChain, LangGraph, LangSmith, and building AI applications.</p>
+      <div class="suggestions">
+        <button class="suggestion" onclick="askSuggestion(this)">How do I create a simple LangGraph agent?</button>
+        <button class="suggestion" onclick="askSuggestion(this)">What is the difference between LangChain and LangGraph?</button>
+        <button class="suggestion" onclick="askSuggestion(this)">How do I add memory to my chatbot?</button>
+        <button class="suggestion" onclick="askSuggestion(this)">Show me how to use tool calling with OpenAI</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-area">
+    <div class="input-wrapper">
+      <div class="input-box">
+        <textarea id="input" placeholder="Ask about LangChain, LangGraph, LangSmith..." rows="1"
+                  onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      </div>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </div>
+    <div class="input-hint">Press Enter to send · Shift+Enter for new line</div>
+  </div>
+
+<script>
+  const API_BASE = 'http://127.0.0.1:2024';
+  let threadId = null;
+  let isStreaming = false;
+
+  // Auto-resize textarea
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function askSuggestion(btn) {
+    document.getElementById('input').value = btn.textContent;
+    sendMessage();
+  }
+
+  async function newChat() {
+    threadId = null;
+    document.getElementById('messages').innerHTML = `
+      <div class="welcome" id="welcome">
+        <div class="welcome-icon">🦜</div>
+        <h1>Chat LangChain</h1>
+        <p>Ask anything about LangChain, LangGraph, LangSmith, and building AI applications.</p>
+        <div class="suggestions">
+          <button class="suggestion" onclick="askSuggestion(this)">How do I create a simple LangGraph agent?</button>
+          <button class="suggestion" onclick="askSuggestion(this)">What is the difference between LangChain and LangGraph?</button>
+          <button class="suggestion" onclick="askSuggestion(this)">How do I add memory to my chatbot?</button>
+          <button class="suggestion" onclick="askSuggestion(this)">Show me how to use tool calling with OpenAI</button>
+        </div>
+      </div>`;
+  }
+
+  async function createThread() {
+    const res = await fetch(`${API_BASE}/threads`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    if (!res.ok) throw new Error('Failed to create thread');
+    const data = await res.json();
+    return data.thread_id;
+  }
+
+  function addMessageRow(role, content) {
+    const welcome = document.getElementById('welcome');
+    if (welcome) welcome.remove();
+
+    const row = document.createElement('div');
+    row.className = 'message-row';
+
+    const isUser = role === 'user';
+    const bodyHtml = isUser
+      ? `${content}`
+      : `
+        <div class="tool-calls"></div>
+        <div class="ai-text">${content}</div>
+        <div class="msg-actions">
+          <button class="deploy-btn" onclick="deploySample(this)">Deploy</button>
+        </div>
+      `;
+    row.innerHTML = `
+      <div class="avatar ${isUser ? 'avatar-user' : 'avatar-ai'}">
+        ${isUser ? 'U' : '🦜'}
+      </div>
+      <div class="msg-content">
+        <div class="msg-label">${isUser ? 'You' : 'LangChain Assistant'}</div>
+        <div class="msg-body">${bodyHtml}</div>
+      </div>`;
+
+    document.getElementById('messages').appendChild(row);
+    scrollToBottom();
+    return row.querySelector('.msg-body');
+  }
+
+  function addThinking() {
+    const welcome = document.getElementById('welcome');
+    if (welcome) welcome.remove();
+
+    const row = document.createElement('div');
+    row.className = 'message-row';
+    row.id = 'thinking-row';
+    row.innerHTML = `
+      <div class="avatar avatar-ai">🦜</div>
+      <div class="msg-content">
+        <div class="msg-label">LangChain Assistant</div>
+        <div class="msg-body">
+          <div class="thinking">
+            <div class="thinking-dots"><span></span><span></span><span></span></div>
+            <span>Thinking...</span>
+          </div>
+        </div>
+      </div>`;
+    document.getElementById('messages').appendChild(row);
+    scrollToBottom();
+  }
+
+  function removeThinking() {
+    const el = document.getElementById('thinking-row');
+    if (el) el.remove();
+  }
+
+  function scrollToBottom() {
+    const msgs = document.getElementById('messages');
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function showError(msg) {
+    const existing = document.querySelector('.error-toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = 'error-toast';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
+  }
+
+  function deploySample(btn) {
+    const deployMessage = [
+      '**Deploy template ready**',
+      '',
+      'A sample LangGraph agent scaffold is available at `agent/langchain/langgraph`.',
+      '',
+      '```bash',
+      'cd agent/langchain/langgraph',
+      'langgraph dev',
+      '```',
+      '',
+      'To deploy on LangSmith: push your repo, create a deployment,',
+      'point it at `agent/langchain/langgraph/langgraph.json`, and set your API keys.',
+    ].join('\\n');
+
+    addMessageRow('ai', marked.parse(deployMessage));
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('input');
+    const text = input.value.trim();
+    if (!text || isStreaming) return;
+
+    isStreaming = true;
+    document.getElementById('sendBtn').disabled = true;
+    input.value = '';
+    input.style.height = 'auto';
+
+    // Show user message
+    addMessageRow('user', escapeHtml(text));
+
+    // Show thinking indicator
+    addThinking();
+
+    try {
+      // Create thread if needed
+      if (!threadId) {
+        threadId = await createThread();
+      }
+
+      // Stream the response
+      const res = await fetch(`${API_BASE}/threads/${threadId}/runs/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assistant_id: 'docs_agent',
+          input: {
+            messages: [{ role: 'human', content: text }]
+          },
+          stream_mode: ['messages'],
+          stream_subgraphs: false
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`API error (${res.status}): ${errText}`);
+      }
+
+      removeThinking();
+
+      let aiBody = null;
+      let fullText = '';
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let currentEvent = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7).trim();
+            continue;
+          }
+          if (line === '') {
+            currentEvent = '';
+            continue;
+          }
+          if (!line.startsWith('data: ')) continue;
+
+          const data = line.slice(6);
+          if (data === '[DONE]') continue;
+
+          // Only process message stream events
+          if (currentEvent !== 'messages/partial') continue;
+
+          try {
+            const parsed = JSON.parse(data);
+            // messages/partial sends an array with one message object
+            const msgChunk = Array.isArray(parsed) ? parsed[0] : parsed;
+            if (!msgChunk) continue;
+
+            // Tool call in-progress (AI deciding which tool to call)
+            if (msgChunk.tool_calls && msgChunk.tool_calls.length > 0) {
+              for (const tc of msgChunk.tool_calls) {
+                const toolName = tc.name || tc.function?.name;
+                if (!toolName) continue;
+                const toolKey = `tool-${toolName}`;
+                if (!aiBody) aiBody = addMessageRow('ai', '');
+                if (!aiBody.querySelector(`[data-tool="${toolKey}"]`)) {
+                  const toolDiv = document.createElement('div');
+                  toolDiv.className = 'tool-call';
+                  toolDiv.dataset.tool = toolKey;
+                  toolDiv.innerHTML = `<span class="tool-icon">🔧</span> Searching: ${escapeHtml(toolName)}`;
+                  const toolContainer = aiBody.querySelector('.tool-calls');
+                  if (toolContainer) {
+                    toolContainer.appendChild(toolDiv);
+                  } else {
+                    aiBody.prepend(toolDiv);
+                  }
+                  scrollToBottom();
+                }
+              }
+            }
+
+            // AI text content
+            if (msgChunk.type === 'ai' || msgChunk.type === 'AIMessageChunk') {
+              const content = msgChunk.content;
+              if (content && typeof content === 'string' && content.length > 0) {
+                if (!aiBody) aiBody = addMessageRow('ai', '');
+                fullText = content;
+                // Re-render only the text portion (after any tool-call divs)
+                let textNode = aiBody.querySelector('.ai-text');
+                if (!textNode) {
+                  textNode = document.createElement('div');
+                  textNode.className = 'ai-text';
+                  aiBody.appendChild(textNode);
+                }
+                textNode.innerHTML = marked.parse(fullText);
+                scrollToBottom();
+              }
+            }
+          } catch (e) {
+            // Ignore parse errors
+          }
+        }
+      }
+
+      // Final render
+      if (!aiBody && !fullText) {
+        addMessageRow('ai', '<span style="color:var(--text-muted)">No response received.</span>');
+      }
+
+    } catch (err) {
+      removeThinking();
+      console.error('Stream error:', err);
+      showError(err.message || 'Failed to connect to the API.');
+      addMessageRow('ai', `<span style="color:var(--error)">Error: ${escapeHtml(err.message)}</span>`);
+    } finally {
+      isStreaming = false;
+      document.getElementById('sendBtn').disabled = false;
+      input.focus();
+      scrollToBottom();
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // Configure marked
+  marked.setOptions({
+    breaks: true,
+    gfm: true,
+  });
+
+  // Focus input on load
+  document.getElementById('input').focus();
+</script>
+</body>
+</html>
