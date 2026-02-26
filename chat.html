@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,7 +10,13 @@
   <!-- Marked.js for Markdown rendering -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     :root {
       --bg-primary: #0a0a0f;
@@ -32,7 +39,8 @@
       --code-bg: #0d0d17;
     }
 
-    html, body {
+    html,
+    body {
       height: 100%;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg-primary);
@@ -58,11 +66,16 @@
     }
 
     .header-logo {
-      width: 36px; height: 36px;
+      width: 36px;
+      height: 36px;
       border-radius: 10px;
       background: var(--user-bubble);
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 16px; color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      color: #fff;
       box-shadow: 0 4px 16px var(--accent-glow);
     }
 
@@ -84,7 +97,9 @@
       letter-spacing: 0.3px;
     }
 
-    .header-spacer { flex: 1; }
+    .header-spacer {
+      flex: 1;
+    }
 
     .new-chat-btn {
       padding: 8px 16px;
@@ -98,6 +113,7 @@
       cursor: pointer;
       transition: all 0.2s;
     }
+
     .new-chat-btn:hover {
       border-color: var(--accent);
       color: var(--accent);
@@ -112,9 +128,18 @@
       scroll-behavior: smooth;
     }
 
-    .messages::-webkit-scrollbar { width: 6px; }
-    .messages::-webkit-scrollbar-track { background: transparent; }
-    .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+    .messages::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .messages::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .messages::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 8px;
+    }
 
     .message-row {
       max-width: 780px;
@@ -127,14 +152,24 @@
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .avatar {
-      width: 32px; height: 32px;
+      width: 32px;
+      height: 32px;
       border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 14px;
       flex-shrink: 0;
       margin-top: 2px;
@@ -169,12 +204,32 @@
       color: var(--text-primary);
     }
 
-    .msg-body p { margin-bottom: 12px; }
-    .msg-body p:last-child { margin-bottom: 0; }
-    .msg-body ul, .msg-body ol { padding-left: 20px; margin-bottom: 12px; }
-    .msg-body li { margin-bottom: 4px; }
-    .msg-body a { color: var(--accent); text-decoration: none; }
-    .msg-body a:hover { text-decoration: underline; }
+    .msg-body p {
+      margin-bottom: 12px;
+    }
+
+    .msg-body p:last-child {
+      margin-bottom: 0;
+    }
+
+    .msg-body ul,
+    .msg-body ol {
+      padding-left: 20px;
+      margin-bottom: 12px;
+    }
+
+    .msg-body li {
+      margin-bottom: 4px;
+    }
+
+    .msg-body a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .msg-body a:hover {
+      text-decoration: underline;
+    }
 
     .msg-body code {
       background: var(--code-bg);
@@ -211,18 +266,35 @@
     }
 
     .thinking-dots span {
-      width: 5px; height: 5px;
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
       background: var(--accent);
       display: inline-block;
       animation: bounce 1.4s infinite both;
     }
-    .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
-    .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    .thinking-dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .thinking-dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
 
     @keyframes bounce {
-      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-      40% { transform: scale(1); opacity: 1; }
+
+      0%,
+      80%,
+      100% {
+        transform: scale(0.6);
+        opacity: 0.4;
+      }
+
+      40% {
+        transform: scale(1);
+        opacity: 1;
+      }
     }
 
     /* ───── Welcome ───── */
@@ -234,10 +306,13 @@
     }
 
     .welcome-icon {
-      width: 64px; height: 64px;
+      width: 64px;
+      height: 64px;
       border-radius: 18px;
       background: var(--user-bubble);
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 28px;
       margin: 0 auto 24px;
       box-shadow: 0 8px 32px var(--accent-glow);
@@ -333,14 +408,17 @@
     }
 
     .send-btn {
-      width: 48px; height: 48px;
+      width: 48px;
+      height: 48px;
       border-radius: 14px;
       border: none;
       background: var(--user-bubble);
       color: #fff;
       font-size: 20px;
       cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       transition: all 0.2s;
       box-shadow: 0 4px 16px var(--accent-glow);
       flex-shrink: 0;
@@ -398,7 +476,9 @@
       font-family: 'SF Mono', 'Fira Code', monospace;
     }
 
-    .tool-call .tool-icon { font-size: 14px; }
+    .tool-call .tool-icon {
+      font-size: 14px;
+    }
 
     .tool-calls {
       display: flex;
@@ -433,13 +513,194 @@
       box-shadow: 0 6px 16px rgba(108, 99, 255, 0.18);
     }
 
+    .deploy-btn:disabled {
+      opacity: 0.5;
+      cursor: wait;
+    }
+
+    .deploy-btn .spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ───── Code Viewer Modal ───── */
+    .code-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .code-modal {
+      width: 90vw;
+      max-width: 900px;
+      height: 80vh;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+    }
+
+    .code-modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .code-modal-header h2 {
+      font-size: 16px;
+      font-weight: 600;
+      flex: 1;
+      background: linear-gradient(135deg, #e8e8f0, #9494b0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .code-modal-header .close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .code-modal-header .close-btn:hover {
+      border-color: var(--error);
+      color: var(--error);
+    }
+
+    .code-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      padding: 0 12px;
+    }
+
+    .code-tab {
+      padding: 10px 16px;
+      font-size: 12px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .code-tab:hover {
+      color: var(--text-secondary);
+    }
+
+    .code-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .code-file-info {
+      padding: 8px 20px;
+      font-size: 12px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .copy-btn {
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--success);
+      color: var(--success);
+    }
+
+    .code-body {
+      flex: 1;
+      overflow: auto;
+      padding: 16px 20px;
+    }
+
+    .code-body pre {
+      margin: 0;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-x: auto;
+    }
+
+    .code-body pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
     @media (max-width: 600px) {
-      .suggestions { grid-template-columns: 1fr; }
-      .welcome h1 { font-size: 22px; }
-      .header-badge { display: none; }
+      .suggestions {
+        grid-template-columns: 1fr;
+      }
+
+      .welcome h1 {
+        font-size: 22px;
+      }
+
+      .header-badge {
+        display: none;
+      }
+
+      .code-modal {
+        width: 98vw;
+        height: 90vh;
+      }
     }
   </style>
 </head>
+
 <body>
 
   <!-- Header -->
@@ -459,7 +720,8 @@
       <p>Ask anything about LangChain, LangGraph, LangSmith, and building AI applications.</p>
       <div class="suggestions">
         <button class="suggestion" onclick="askSuggestion(this)">How do I create a simple LangGraph agent?</button>
-        <button class="suggestion" onclick="askSuggestion(this)">What is the difference between LangChain and LangGraph?</button>
+        <button class="suggestion" onclick="askSuggestion(this)">What is the difference between LangChain and
+          LangGraph?</button>
         <button class="suggestion" onclick="askSuggestion(this)">How do I add memory to my chatbot?</button>
         <button class="suggestion" onclick="askSuggestion(this)">Show me how to use tool calling with OpenAI</button>
       </div>
@@ -471,10 +733,11 @@
     <div class="input-wrapper">
       <div class="input-box">
         <textarea id="input" placeholder="Ask about LangChain, LangGraph, LangSmith..." rows="1"
-                  onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
       </div>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
           <line x1="22" y1="2" x2="11" y2="13"></line>
           <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
         </svg>
@@ -483,32 +746,32 @@
     <div class="input-hint">Press Enter to send · Shift+Enter for new line</div>
   </div>
 
-<script>
-  const API_BASE = 'http://127.0.0.1:2024';
-  let threadId = null;
-  let isStreaming = false;
+  <script>
+    const API_BASE = 'http://127.0.0.1:2024';
+    let threadId = null;
+    let isStreaming = false;
 
-  // Auto-resize textarea
-  function autoResize(el) {
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 200) + 'px';
-  }
+    // Auto-resize textarea
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+    }
 
-  function handleKey(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
+    function handleKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    function askSuggestion(btn) {
+      document.getElementById('input').value = btn.textContent;
       sendMessage();
     }
-  }
 
-  function askSuggestion(btn) {
-    document.getElementById('input').value = btn.textContent;
-    sendMessage();
-  }
-
-  async function newChat() {
-    threadId = null;
-    document.getElementById('messages').innerHTML = `
+    async function newChat() {
+      threadId = null;
+      document.getElementById('messages').innerHTML = `
       <div class="welcome" id="welcome">
         <div class="welcome-icon">🦜</div>
         <h1>Chat LangChain</h1>
@@ -520,37 +783,37 @@
           <button class="suggestion" onclick="askSuggestion(this)">Show me how to use tool calling with OpenAI</button>
         </div>
       </div>`;
-  }
+    }
 
-  async function createThread() {
-    const res = await fetch(`${API_BASE}/threads`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
-    });
-    if (!res.ok) throw new Error('Failed to create thread');
-    const data = await res.json();
-    return data.thread_id;
-  }
+    async function createThread() {
+      const res = await fetch(`${API_BASE}/threads`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      if (!res.ok) throw new Error('Failed to create thread');
+      const data = await res.json();
+      return data.thread_id;
+    }
 
-  function addMessageRow(role, content) {
-    const welcome = document.getElementById('welcome');
-    if (welcome) welcome.remove();
+    function addMessageRow(role, content) {
+      const welcome = document.getElementById('welcome');
+      if (welcome) welcome.remove();
 
-    const row = document.createElement('div');
-    row.className = 'message-row';
+      const row = document.createElement('div');
+      row.className = 'message-row';
 
-    const isUser = role === 'user';
-    const bodyHtml = isUser
-      ? `${content}`
-      : `
+      const isUser = role === 'user';
+      const bodyHtml = isUser
+        ? `${content}`
+        : `
         <div class="tool-calls"></div>
         <div class="ai-text">${content}</div>
         <div class="msg-actions">
           <button class="deploy-btn" onclick="deploySample(this)">Deploy</button>
         </div>
       `;
-    row.innerHTML = `
+      row.innerHTML = `
       <div class="avatar ${isUser ? 'avatar-user' : 'avatar-ai'}">
         ${isUser ? 'U' : '🦜'}
       </div>
@@ -559,19 +822,19 @@
         <div class="msg-body">${bodyHtml}</div>
       </div>`;
 
-    document.getElementById('messages').appendChild(row);
-    scrollToBottom();
-    return row.querySelector('.msg-body');
-  }
+      document.getElementById('messages').appendChild(row);
+      scrollToBottom();
+      return row.querySelector('.msg-body');
+    }
 
-  function addThinking() {
-    const welcome = document.getElementById('welcome');
-    if (welcome) welcome.remove();
+    function addThinking() {
+      const welcome = document.getElementById('welcome');
+      if (welcome) welcome.remove();
 
-    const row = document.createElement('div');
-    row.className = 'message-row';
-    row.id = 'thinking-row';
-    row.innerHTML = `
+      const row = document.createElement('div');
+      row.className = 'message-row';
+      row.id = 'thinking-row';
+      row.innerHTML = `
       <div class="avatar avatar-ai">🦜</div>
       <div class="msg-content">
         <div class="msg-label">LangChain Assistant</div>
@@ -582,208 +845,344 @@
           </div>
         </div>
       </div>`;
-    document.getElementById('messages').appendChild(row);
-    scrollToBottom();
-  }
+      document.getElementById('messages').appendChild(row);
+      scrollToBottom();
+    }
 
-  function removeThinking() {
-    const el = document.getElementById('thinking-row');
-    if (el) el.remove();
-  }
+    function removeThinking() {
+      const el = document.getElementById('thinking-row');
+      if (el) el.remove();
+    }
 
-  function scrollToBottom() {
-    const msgs = document.getElementById('messages');
-    msgs.scrollTop = msgs.scrollHeight;
-  }
+    function scrollToBottom() {
+      const msgs = document.getElementById('messages');
+      msgs.scrollTop = msgs.scrollHeight;
+    }
 
-  function showError(msg) {
-    const existing = document.querySelector('.error-toast');
-    if (existing) existing.remove();
-    const toast = document.createElement('div');
-    toast.className = 'error-toast';
-    toast.textContent = msg;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 5000);
-  }
+    function showError(msg) {
+      const existing = document.querySelector('.error-toast');
+      if (existing) existing.remove();
+      const toast = document.createElement('div');
+      toast.className = 'error-toast';
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 5000);
+    }
 
-  function deploySample(btn) {
-    const deployMessage = [
-      '**Deploy template ready**',
-      '',
-      'A sample LangGraph agent scaffold is available at `agent/langchain/langgraph`.',
-      '',
-      '```bash',
-      'cd agent/langchain/langgraph',
-      'langgraph dev',
-      '```',
-      '',
-      'To deploy on LangSmith: push your repo, create a deployment,',
-      'point it at `agent/langchain/langgraph/langgraph.json`, and set your API keys.',
-    ].join('\\n');
+    // Collect all conversation messages from the DOM
+    function collectConversationMessages() {
+      const rows = document.querySelectorAll('.message-row');
+      const messages = [];
+      for (const row of rows) {
+        const label = row.querySelector('.msg-label');
+        if (!label) continue;
+        const isUser = label.textContent.trim() === 'You';
+        const textEl = row.querySelector('.ai-text') || row.querySelector('.msg-body');
+        const text = textEl ? textEl.textContent.trim() : '';
+        if (!text) continue;
+        messages.push({ role: isUser ? 'human' : 'assistant', content: text });
+      }
+      return messages;
+    }
 
-    addMessageRow('ai', marked.parse(deployMessage));
-  }
+    // Show the code file viewer modal
+    function showCodeViewer(agentName, description, files) {
+      const overlay = document.createElement('div');
+      overlay.className = 'code-overlay';
+      overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
 
-  async function sendMessage() {
-    const input = document.getElementById('input');
-    const text = input.value.trim();
-    if (!text || isStreaming) return;
+      let activeIdx = 0;
 
-    isStreaming = true;
-    document.getElementById('sendBtn').disabled = true;
-    input.value = '';
-    input.style.height = 'auto';
+      function renderFile(idx) {
+        const file = files[idx];
+        const ext = file.filename.split('.').pop();
+        const langMap = { py: 'python', json: 'json', txt: 'text', env: 'bash', example: 'bash' };
+        const lang = langMap[ext] || 'text';
+        const tabsHtml = files.map((f, i) =>
+          `<button class="code-tab ${i === idx ? 'active' : ''}" onclick="switchTab(${i})">${f.filename}</button>`
+        ).join('');
 
-    // Show user message
-    addMessageRow('user', escapeHtml(text));
-
-    // Show thinking indicator
-    addThinking();
-
-    try {
-      // Create thread if needed
-      if (!threadId) {
-        threadId = await createThread();
+        overlay.innerHTML = `
+        <div class="code-modal">
+          <div class="code-modal-header">
+            <h2>${agentName} — ${description}</h2>
+            <button class="close-btn" onclick="this.closest('.code-overlay').remove()">&times;</button>
+          </div>
+          <div class="code-tabs">${tabsHtml}</div>
+          <div class="code-file-info">
+            <span>${file.description || file.filename}</span>
+            <button class="copy-btn" onclick="copyFileContent(${idx})">Copy</button>
+          </div>
+          <div class="code-body">
+            <pre><code class="language-${lang}">${escapeHtml(file.content)}</code></pre>
+          </div>
+        </div>`;
       }
 
-      // Stream the response
-      const res = await fetch(`${API_BASE}/threads/${threadId}/runs/stream`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          assistant_id: 'docs_agent',
-          input: {
-            messages: [{ role: 'human', content: text }]
-          },
-          stream_mode: ['messages'],
-          stream_subgraphs: false
-        })
-      });
+      // Expose globally for onclick handlers inside modal
+      window._deployFiles = files;
+      window.switchTab = (idx) => { activeIdx = idx; renderFile(idx); };
+      window.copyFileContent = async (idx) => {
+        try {
+          await navigator.clipboard.writeText(files[idx].content);
+          const btn = overlay.querySelector('.copy-btn');
+          btn.textContent = 'Copied!';
+          btn.style.color = 'var(--success)';
+          btn.style.borderColor = 'var(--success)';
+          setTimeout(() => { btn.textContent = 'Copy'; btn.style.color = ''; btn.style.borderColor = ''; }, 2000);
+        } catch { /* ignore */ }
+      };
 
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`API error (${res.status}): ${errText}`);
+      renderFile(0);
+      document.body.appendChild(overlay);
+    }
+
+    // Deploy button handler — calls deploy_agent to generate code
+    async function deploySample(btn) {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Generating...';
+
+      try {
+        const messages = collectConversationMessages();
+        if (messages.length === 0) {
+          showError('No conversation to generate from.');
+          return;
+        }
+
+        // Create a separate thread for deploy_agent
+        const threadRes = await fetch(`${API_BASE}/threads`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const thread = await threadRes.json();
+
+        // Build context message from conversation
+        const contextSummary = messages.map(m =>
+          `${m.role === 'human' ? 'USER' : 'ASSISTANT'}: ${m.content.slice(0, 500)}`
+        ).join('\n\n');
+
+        // Call deploy_agent (wait, not stream)
+        const runRes = await fetch(`${API_BASE}/threads/${thread.thread_id}/runs/wait`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            assistant_id: 'deploy_agent',
+            input: {
+              messages: [{
+                role: 'human',
+                content: `Generate a LangGraph agent based on this conversation:\n\n${contextSummary}`
+              }]
+            }
+          })
+        });
+
+        if (!runRes.ok) throw new Error(`API error: ${runRes.status}`);
+
+        const result = await runRes.json();
+
+        // Extract the AI response text
+        const aiMessages = (result.messages || []).filter(m => m.type === 'ai');
+        const lastAi = aiMessages[aiMessages.length - 1];
+        if (!lastAi || !lastAi.content) throw new Error('No response from deploy agent');
+
+        // Parse the JSON from the response
+        let codeSpec;
+        const text = typeof lastAi.content === 'string' ? lastAi.content : JSON.stringify(lastAi.content);
+
+        // Try to extract JSON from the response (may be wrapped in code fences)
+        const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, text];
+        const jsonStr = jsonMatch[1].trim();
+
+        try {
+          codeSpec = JSON.parse(jsonStr);
+        } catch {
+          // Try the raw text
+          codeSpec = JSON.parse(text.trim());
+        }
+
+        if (!codeSpec.files || !Array.isArray(codeSpec.files)) {
+          throw new Error('Invalid response format — no files array');
+        }
+
+        // Show the code viewer
+        showCodeViewer(
+          codeSpec.agent_name || 'generated_agent',
+          codeSpec.description || 'Generated LangGraph Agent',
+          codeSpec.files
+        );
+
+      } catch (err) {
+        console.error('Deploy error:', err);
+        showError(`Deploy failed: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Deploy';
       }
+    }
 
-      removeThinking();
+    async function sendMessage() {
+      const input = document.getElementById('input');
+      const text = input.value.trim();
+      if (!text || isStreaming) return;
 
-      let aiBody = null;
-      let fullText = '';
+      isStreaming = true;
+      document.getElementById('sendBtn').disabled = true;
+      input.value = '';
+      input.style.height = 'auto';
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let currentEvent = '';
+      // Show user message
+      addMessageRow('user', escapeHtml(text));
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      // Show thinking indicator
+      addThinking();
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
+      try {
+        // Create thread if needed
+        if (!threadId) {
+          threadId = await createThread();
+        }
 
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            currentEvent = line.slice(7).trim();
-            continue;
-          }
-          if (line === '') {
-            currentEvent = '';
-            continue;
-          }
-          if (!line.startsWith('data: ')) continue;
+        // Stream the response
+        const res = await fetch(`${API_BASE}/threads/${threadId}/runs/stream`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            assistant_id: 'docs_agent',
+            input: {
+              messages: [{ role: 'human', content: text }]
+            },
+            stream_mode: ['messages'],
+            stream_subgraphs: false
+          })
+        });
 
-          const data = line.slice(6);
-          if (data === '[DONE]') continue;
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`API error (${res.status}): ${errText}`);
+        }
 
-          // Only process message stream events
-          if (currentEvent !== 'messages/partial') continue;
+        removeThinking();
 
-          try {
-            const parsed = JSON.parse(data);
-            // messages/partial sends an array with one message object
-            const msgChunk = Array.isArray(parsed) ? parsed[0] : parsed;
-            if (!msgChunk) continue;
+        let aiBody = null;
+        let fullText = '';
 
-            // Tool call in-progress (AI deciding which tool to call)
-            if (msgChunk.tool_calls && msgChunk.tool_calls.length > 0) {
-              for (const tc of msgChunk.tool_calls) {
-                const toolName = tc.name || tc.function?.name;
-                if (!toolName) continue;
-                const toolKey = `tool-${toolName}`;
-                if (!aiBody) aiBody = addMessageRow('ai', '');
-                if (!aiBody.querySelector(`[data-tool="${toolKey}"]`)) {
-                  const toolDiv = document.createElement('div');
-                  toolDiv.className = 'tool-call';
-                  toolDiv.dataset.tool = toolKey;
-                  toolDiv.innerHTML = `<span class="tool-icon">🔧</span> Searching: ${escapeHtml(toolName)}`;
-                  const toolContainer = aiBody.querySelector('.tool-calls');
-                  if (toolContainer) {
-                    toolContainer.appendChild(toolDiv);
-                  } else {
-                    aiBody.prepend(toolDiv);
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let currentEvent = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('event: ')) {
+              currentEvent = line.slice(7).trim();
+              continue;
+            }
+            if (line === '') {
+              currentEvent = '';
+              continue;
+            }
+            if (!line.startsWith('data: ')) continue;
+
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            // Only process message stream events
+            if (currentEvent !== 'messages/partial') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              // messages/partial sends an array with one message object
+              const msgChunk = Array.isArray(parsed) ? parsed[0] : parsed;
+              if (!msgChunk) continue;
+
+              // Tool call in-progress (AI deciding which tool to call)
+              if (msgChunk.tool_calls && msgChunk.tool_calls.length > 0) {
+                for (const tc of msgChunk.tool_calls) {
+                  const toolName = tc.name || tc.function?.name;
+                  if (!toolName) continue;
+                  const toolKey = `tool-${toolName}`;
+                  if (!aiBody) aiBody = addMessageRow('ai', '');
+                  if (!aiBody.querySelector(`[data-tool="${toolKey}"]`)) {
+                    const toolDiv = document.createElement('div');
+                    toolDiv.className = 'tool-call';
+                    toolDiv.dataset.tool = toolKey;
+                    toolDiv.innerHTML = `<span class="tool-icon">🔧</span> Searching: ${escapeHtml(toolName)}`;
+                    const toolContainer = aiBody.querySelector('.tool-calls');
+                    if (toolContainer) {
+                      toolContainer.appendChild(toolDiv);
+                    } else {
+                      aiBody.prepend(toolDiv);
+                    }
+                    scrollToBottom();
                   }
+                }
+              }
+
+              // AI text content
+              if (msgChunk.type === 'ai' || msgChunk.type === 'AIMessageChunk') {
+                const content = msgChunk.content;
+                if (content && typeof content === 'string' && content.length > 0) {
+                  if (!aiBody) aiBody = addMessageRow('ai', '');
+                  fullText = content;
+                  // Re-render only the text portion (after any tool-call divs)
+                  let textNode = aiBody.querySelector('.ai-text');
+                  if (!textNode) {
+                    textNode = document.createElement('div');
+                    textNode.className = 'ai-text';
+                    aiBody.appendChild(textNode);
+                  }
+                  textNode.innerHTML = marked.parse(fullText);
                   scrollToBottom();
                 }
               }
+            } catch (e) {
+              // Ignore parse errors
             }
-
-            // AI text content
-            if (msgChunk.type === 'ai' || msgChunk.type === 'AIMessageChunk') {
-              const content = msgChunk.content;
-              if (content && typeof content === 'string' && content.length > 0) {
-                if (!aiBody) aiBody = addMessageRow('ai', '');
-                fullText = content;
-                // Re-render only the text portion (after any tool-call divs)
-                let textNode = aiBody.querySelector('.ai-text');
-                if (!textNode) {
-                  textNode = document.createElement('div');
-                  textNode.className = 'ai-text';
-                  aiBody.appendChild(textNode);
-                }
-                textNode.innerHTML = marked.parse(fullText);
-                scrollToBottom();
-              }
-            }
-          } catch (e) {
-            // Ignore parse errors
           }
         }
-      }
 
-      // Final render
-      if (!aiBody && !fullText) {
-        addMessageRow('ai', '<span style="color:var(--text-muted)">No response received.</span>');
-      }
+        // Final render
+        if (!aiBody && !fullText) {
+          addMessageRow('ai', '<span style="color:var(--text-muted)">No response received.</span>');
+        }
 
-    } catch (err) {
-      removeThinking();
-      console.error('Stream error:', err);
-      showError(err.message || 'Failed to connect to the API.');
-      addMessageRow('ai', `<span style="color:var(--error)">Error: ${escapeHtml(err.message)}</span>`);
-    } finally {
-      isStreaming = false;
-      document.getElementById('sendBtn').disabled = false;
-      input.focus();
-      scrollToBottom();
+      } catch (err) {
+        removeThinking();
+        console.error('Stream error:', err);
+        showError(err.message || 'Failed to connect to the API.');
+        addMessageRow('ai', `<span style="color:var(--error)">Error: ${escapeHtml(err.message)}</span>`);
+      } finally {
+        isStreaming = false;
+        document.getElementById('sendBtn').disabled = false;
+        input.focus();
+        scrollToBottom();
+      }
     }
-  }
 
-  function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-  }
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
 
-  // Configure marked
-  marked.setOptions({
-    breaks: true,
-    gfm: true,
-  });
+    // Configure marked
+    marked.setOptions({
+      breaks: true,
+      gfm: true,
+    });
 
-  // Focus input on load
-  document.getElementById('input').focus();
-</script>
+    // Focus input on load
+    document.getElementById('input').focus();
+  </script>
 </body>
+
 </html>

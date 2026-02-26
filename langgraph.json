@@ -1,7 +1,10 @@
 {
-  "dependencies": ["."],
+  "dependencies": [
+    "."
+  ],
   "graphs": {
-    "docs_agent": "./src/agent/docs_graph.py:docs_agent"
+    "docs_agent": "./src/agent/docs_graph.py:docs_agent",
+    "deploy_agent": "./src/agent/deploy_graph.py:deploy_agent"
   },
   "env": ".env",
   "image_distro": "wolfi",
