@@ -258,41 +258,50 @@
 
     /* ───── Thinking Indicator ───── */
     .thinking {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px 20px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      min-width: 64px;
+    }
+
+    .thinking-dots {
       display: flex;
       align-items: center;
-      gap: 6px;
-      color: var(--text-muted);
-      font-size: 14px;
+      gap: 5px;
     }
 
     .thinking-dots span {
-      width: 5px;
-      height: 5px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: var(--accent);
       display: inline-block;
-      animation: bounce 1.4s infinite both;
+      animation: wave 1.2s ease-in-out infinite;
     }
 
     .thinking-dots span:nth-child(2) {
-      animation-delay: 0.2s;
+      animation-delay: 0.15s;
     }
 
     .thinking-dots span:nth-child(3) {
-      animation-delay: 0.4s;
+      animation-delay: 0.3s;
     }
 
-    @keyframes bounce {
+    @keyframes wave {
 
       0%,
-      80%,
       100% {
-        transform: scale(0.6);
+        transform: translateY(0);
         opacity: 0.4;
       }
 
-      40% {
-        transform: scale(1);
+      50% {
+        transform: translateY(-8px);
         opacity: 1;
       }
     }
@@ -809,9 +818,6 @@
         : `
         <div class="tool-calls"></div>
         <div class="ai-text">${content}</div>
-        <div class="msg-actions">
-          <button class="deploy-btn" onclick="deploySample(this)">Deploy</button>
-        </div>
       `;
       row.innerHTML = `
       <div class="avatar ${isUser ? 'avatar-user' : 'avatar-ai'}">
@@ -841,7 +847,6 @@
         <div class="msg-body">
           <div class="thinking">
             <div class="thinking-dots"><span></span><span></span><span></span></div>
-            <span>Thinking...</span>
           </div>
         </div>
       </div>`;
@@ -1044,8 +1049,20 @@
           threadId = await createThread();
         }
 
-        // Stream the response
-        const res = await fetch(`${API_BASE}/threads/${threadId}/runs/stream`, {
+        // Collect conversation context for the monitor agent
+        const priorMessages = collectConversationMessages();
+        // Add the current user message to the context
+        priorMessages.push({ role: 'human', content: text });
+
+        // Build a summary of last few messages for monitor (keep it lean)
+        const monitorContext = priorMessages.slice(-6).map(m =>
+          `${m.role === 'human' ? 'USER' : 'ASSISTANT'}: ${m.content.slice(0, 300)}`
+        ).join('\n\n');
+
+        // --- Fire BOTH requests in parallel ---
+
+        // 1) Stream the docs_agent response
+        const streamPromise = fetch(`${API_BASE}/threads/${threadId}/runs/stream`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1058,12 +1075,52 @@
           })
         });
 
+        // 2) Monitor agent (separate thread, non-streaming)
+        const monitorPromise = (async () => {
+          try {
+            const monitorThread = await createThread();
+            const monitorRes = await fetch(`${API_BASE}/threads/${monitorThread}/runs/wait`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                assistant_id: 'intent_monitor',
+                input: {
+                  messages: [{
+                    role: 'human',
+                    content: `Classify this conversation:\n\n${monitorContext}`
+                  }]
+                }
+              })
+            });
+            if (!monitorRes.ok) return { deployable: false };
+            const monitorResult = await monitorRes.json();
+            // Extract the AI response and parse the JSON verdict
+            const aiMsgs = (monitorResult.messages || []).filter(m => m.type === 'ai');
+            const lastMsg = aiMsgs[aiMsgs.length - 1];
+            if (!lastMsg || !lastMsg.content) return { deployable: false };
+            const raw = typeof lastMsg.content === 'string' ? lastMsg.content : JSON.stringify(lastMsg.content);
+            // Try to parse JSON (may be wrapped in code fences)
+            const jsonMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, raw];
+            try {
+              return JSON.parse(jsonMatch[1].trim());
+            } catch {
+              return JSON.parse(raw.trim());
+            }
+          } catch (err) {
+            console.warn('Monitor agent error:', err);
+            return { deployable: false };
+          }
+        })();
+
+        // Wait for the stream response to start
+        const res = await streamPromise;
+
         if (!res.ok) {
           const errText = await res.text();
           throw new Error(`API error (${res.status}): ${errText}`);
         }
 
-        removeThinking();
+        let thinkingRemoved = false;
 
         let aiBody = null;
         let fullText = '';
@@ -1106,6 +1163,7 @@
 
               // Tool call in-progress (AI deciding which tool to call)
               if (msgChunk.tool_calls && msgChunk.tool_calls.length > 0) {
+                if (!thinkingRemoved) { removeThinking(); thinkingRemoved = true; }
                 for (const tc of msgChunk.tool_calls) {
                   const toolName = tc.name || tc.function?.name;
                   if (!toolName) continue;
@@ -1131,6 +1189,7 @@
               if (msgChunk.type === 'ai' || msgChunk.type === 'AIMessageChunk') {
                 const content = msgChunk.content;
                 if (content && typeof content === 'string' && content.length > 0) {
+                  if (!thinkingRemoved) { removeThinking(); thinkingRemoved = true; }
                   if (!aiBody) aiBody = addMessageRow('ai', '');
                   fullText = content;
                   // Re-render only the text portion (after any tool-call divs)
@@ -1151,8 +1210,32 @@
         }
 
         // Final render
+        if (!thinkingRemoved) { removeThinking(); thinkingRemoved = true; }
         if (!aiBody && !fullText) {
           addMessageRow('ai', '<span style="color:var(--text-muted)">No response received.</span>');
+        }
+
+        // --- Wait for monitor verdict and conditionally show Deploy button ---
+        const verdict = await monitorPromise;
+        console.log('Monitor verdict:', verdict);
+
+        if (verdict.deployable && aiBody) {
+          // Find or create msg-actions container inside this AI message
+          let actionsDiv = aiBody.querySelector('.msg-actions');
+          if (!actionsDiv) {
+            actionsDiv = document.createElement('div');
+            actionsDiv.className = 'msg-actions';
+            aiBody.appendChild(actionsDiv);
+          }
+          const deployBtn = document.createElement('button');
+          deployBtn.className = 'deploy-btn';
+          deployBtn.onclick = function () { deploySample(this); };
+          const typeLabel = verdict.system_type && verdict.system_type !== 'NONE'
+            ? ` as ${verdict.system_type}` : '';
+          deployBtn.textContent = `Deploy${typeLabel}`;
+          deployBtn.style.animation = 'fadeIn 0.3s ease';
+          actionsDiv.appendChild(deployBtn);
+          scrollToBottom();
         }
 
       } catch (err) {

@@ -4,7 +4,8 @@
   ],
   "graphs": {
     "docs_agent": "./src/agent/docs_graph.py:docs_agent",
-    "deploy_agent": "./src/agent/deploy_graph.py:deploy_agent"
+    "deploy_agent": "./src/agent/deploy_graph.py:deploy_agent",
+    "intent_monitor": "./src/agent/monitor_graph.py:intent_monitor"
   },
   "env": ".env",
   "image_distro": "wolfi",
