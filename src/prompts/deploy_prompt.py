@@ -53,11 +53,30 @@ Generate these files (all paths relative to project root):
 ```
 
 ### 5. `pyproject.toml` — Python project file
-- Include all required dependencies
-- Always include: `langchain`, `langgraph`, `langsmith`, `python-dotenv`
-- Include LLM provider packages: `langchain-openai`, `langchain-anthropic`
-- Add domain-specific packages based on the user's needs (e.g., `langchain-chroma` for RAG, `langchain-community` for specific integrations)
-- Use `requires-python = ">=3.11"`
+Use this exact structure (replace dependencies as needed):
+```toml
+[project]
+name = "my-agent"
+version = "0.0.1"
+requires-python = ">=3.11"
+dependencies = [
+    "langchain>=0.3.0",
+    "langgraph>=0.2.0",
+    "langsmith>=0.1.0",
+    "python-dotenv>=1.0.0",
+    "langchain-openai>=0.2.0",
+    "langchain-anthropic>=0.1.0",
+]
+
+[build-system]
+requires = ["setuptools>=73.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py_modules = ["agent", "tools", "prompts"]
+```
+- Always include the `[tool.setuptools]` section with `py_modules` listing every top-level `.py` file (without `.py` extension) — this is required to avoid setuptools flat-layout errors
+- Add domain-specific packages to the dependencies list (e.g., `langchain-chroma` for RAG, `langchain-community` for specific integrations)
 
 ### 6. `.env.example` — Required environment variables
 ```bash
