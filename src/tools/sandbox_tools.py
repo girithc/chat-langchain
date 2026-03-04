@@ -242,3 +242,68 @@ def _truncate(text: str, max_len: int) -> str:
     if len(text) <= max_len:
         return text
     return text[:max_len] + f"\n... (truncated, {len(text)} total chars)"
+
+
+def chat_with_agent(sandbox_id: str, messages: list[dict]) -> dict:
+    """Send a chat message to an already running agent in the E2B sandbox.
+
+    Args:
+        sandbox_id: The ID of the E2B sandbox.
+        messages: The full list of conversation messages.
+    """
+    logger.info(f"Connecting to sandbox {sandbox_id} for chat...")
+    try:
+        # Import Sandbox dynamically if not already available in scope
+        # (It is imported at module level, but we use _create_sandbox usually)
+        from e2b import Sandbox
+
+        sandbox = Sandbox.connect(sandbox_id)
+
+        # Upload the runner script
+        runner_path = Path(__file__).parent / "sandbox_runner_template.py"
+        if not runner_path.exists():
+            return {"error": "Runner template not found regionally"}
+
+        runner_code = runner_path.read_text()
+        sandbox.files.write("/home/user/project/runner.py", runner_code)
+
+        # Execute runner.py, pass messages via stdin
+        import json
+        payload = json.dumps({"messages": messages})
+        
+        result = sandbox.commands.run(
+            "cd /home/user/project && python runner.py",
+            timeout=60,
+            on_stdout=lambda x: logger.debug(f"[Agent STDOUT] {x}"),
+            on_stderr=lambda x: logger.warning(f"[Agent STDERR] {x}")
+        )
+
+        if result.exit_code != 0:
+            logger.error(f"Agent execution failed: {result.stderr}")
+            return {"error": f"Agent execution failed: {result.stderr}"}
+
+        # The runner.py outputs JSON on stdout containing either {"message": ...} or {"error": ...}
+        import re
+        output_text = result.stdout
+        
+        # Try to extract the JSON output
+        try:
+            # The runner script prints the result as the last line usually
+            lines = [l.strip() for l in output_text.split("\n") if l.strip()]
+            if not lines:
+                return {"error": "No output from agent"}
+                
+            last_line = lines[-1]
+            response = json.loads(last_line)
+            
+            if "error" in response:
+                return {"error": response["error"]}
+                
+            return {"message": response.get("message")}
+            
+        except json.JSONDecodeError:
+            return {"error": f"Failed to parse agent output: {output_text}"}
+
+    except Exception as e:
+        logger.error(f"Sandbox chat error: {e}")
+        return {"error": str(e)}

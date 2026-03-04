@@ -895,6 +895,187 @@
       font-style: italic;
     }
 
+    /* ───── Agent Chat Sidebar ───── */
+    .modal-layout {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .editor-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      border-right: 1px solid var(--border);
+    }
+
+    .agent-sidebar {
+      width: 380px;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-tertiary);
+      flex-shrink: 0;
+    }
+
+    .agent-sidebar-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(10, 10, 15, 0.4);
+    }
+
+    .agent-sidebar-header .icon {
+      color: var(--accent);
+    }
+
+    .agent-chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .agent-chat-msg {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: 90%;
+    }
+
+    .agent-chat-msg.human {
+      align-self: flex-end;
+    }
+
+    .agent-chat-msg.ai {
+      align-self: flex-start;
+    }
+
+    .agent-chat-bubble {
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+
+    .agent-chat-msg.human .agent-chat-bubble {
+      background: var(--user-bubble);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .agent-chat-msg.ai .agent-chat-bubble {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      border-bottom-left-radius: 4px;
+    }
+
+    .agent-chat-bubble pre {
+      background: rgba(0, 0, 0, 0.2) !important;
+      padding: 8px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 8px 0;
+    }
+
+    .agent-chat-bubble code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 11px;
+    }
+
+    .agent-chat-input-area {
+      padding: 12px;
+      border-top: 1px solid var(--border);
+      background: rgba(10, 10, 15, 0.3);
+    }
+
+    .agent-chat-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 4px;
+      transition: border-color 0.2s;
+    }
+
+    .agent-chat-input-wrapper:focus-within {
+      border-color: var(--border-focus);
+    }
+
+    .agent-chat-input-wrapper textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 13px;
+      padding: 8px 12px;
+      resize: none;
+      outline: none;
+      min-height: 20px;
+      max-height: 120px;
+    }
+
+    .agent-chat-input-wrapper textarea:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .agent-chat-send-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin-bottom: 2px;
+      margin-right: 2px;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .agent-chat-send-btn:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    .agent-chat-send-btn:disabled {
+      background: var(--border);
+      color: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    .chat-overlay-msg {
+      position: absolute;
+      inset: 0;
+      background: rgba(26, 26, 40, 0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      z-index: 10;
+      border-radius: 0 0 16px 0;
+    }
+
     @media (max-width: 600px) {
       .suggestions {
         grid-template-columns: 1fr;
@@ -1116,22 +1297,22 @@
 
       try {
         return JSON.parse(candidate);
-      } catch {}
+      } catch { }
 
       try {
         return JSON.parse(raw);
-      } catch {}
+      } catch { }
 
       if (/\\\\[nrt"]/.test(candidate)) {
         try {
           return JSON.parse(unescapeJsonish(candidate));
-        } catch {}
+        } catch { }
       }
 
       if (/\\\\[nrt"]/.test(raw)) {
         try {
           return JSON.parse(unescapeJsonish(raw));
-        } catch {}
+        } catch { }
       }
 
       throw new Error('Invalid JSON from agent');
@@ -1171,6 +1352,7 @@
       overlay: null,
       agentName: '',
       description: '',
+      agentChatHistory: [], // Store chat history for the side agent
     };
 
     function showEditor(agentName, description, files) {
@@ -1185,6 +1367,7 @@
       _editorState.sandboxStatus = 'idle';
       _editorState.agentName = agentName;
       _editorState.description = description;
+      _editorState.agentChatHistory = [];
 
       const overlay = document.createElement('div');
       overlay.className = 'code-overlay';
@@ -1205,21 +1388,51 @@
           </div>
           <button class="close-btn" onclick="closeEditor()">&times;</button>
         </div>
-        <div class="code-tabs" id="editor-tabs"></div>
-        <div class="code-file-info" id="editor-file-info">
-          <span></span>
-          <button class="copy-btn" onclick="copyCurrentFile()">Copy</button>
-        </div>
-        <div class="editor-split">
-          <div class="editor-pane" id="editor-pane"></div>
-          <div class="terminal-resize-bar" id="terminal-resize-bar"></div>
-          <div class="terminal-pane" id="terminal-pane">
-            <div class="terminal-header">
-              <span>Terminal</span>
-              <button class="terminal-clear-btn" onclick="clearTerminal()">Clear</button>
+        
+        <div class="modal-layout">
+          <div class="editor-section">
+            <div class="code-tabs" id="editor-tabs"></div>
+            <div class="code-file-info" id="editor-file-info">
+              <span></span>
+              <button class="copy-btn" onclick="copyCurrentFile()">Copy</button>
             </div>
-            <div class="terminal-body" id="terminal-body">
-              <div class="term-line term-system">Ready — click "Run in Sandbox" to deploy and execute your agent</div>
+            <div class="editor-split">
+              <div class="editor-pane" id="editor-pane"></div>
+              <div class="terminal-resize-bar" id="terminal-resize-bar"></div>
+              <div class="terminal-pane" id="terminal-pane">
+                <div class="terminal-header">
+                  <span>Terminal</span>
+                  <button class="terminal-clear-btn" onclick="clearTerminal()">Clear</button>
+                </div>
+                <div class="terminal-body" id="terminal-body">
+                  <div class="term-line term-system">Ready — click "Run in Sandbox" to deploy and execute your agent</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="agent-sidebar">
+            <div class="agent-sidebar-header">
+              <span class="icon">🤖</span> Test Agent
+            </div>
+            <div style="position: relative; flex: 1; display: flex; flex-direction: column; min-height: 0;">
+              <div id="agent-chat-overlay" class="chat-overlay-msg">
+                <div>Deploy and run the agent in the sandbox first to chat with it.</div>
+              </div>
+              <div class="agent-chat-messages" id="agent-chat-messages">
+                <div class="agent-chat-msg ai">
+                  <div class="agent-chat-bubble">I am ready! Start a conversation with me.</div>
+                </div>
+              </div>
+              <div class="agent-chat-input-area">
+                <div class="agent-chat-input-wrapper">
+                  <textarea id="agent-chat-input" placeholder="Message the agent..." rows="1" disabled
+                    onkeydown="handleAgentChatKey(event)" oninput="autoResize(this)"></textarea>
+                  <button class="agent-chat-send-btn" id="agent-chat-send-btn" onclick="sendAgentMessage()" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1369,6 +1582,15 @@
       const text = document.getElementById('status-text');
       if (dot) { dot.className = 'status-dot ' + status; }
       if (text) { text.textContent = label || status; }
+
+      // Enable/disable chat sidebar based on running status
+      const overlay = document.getElementById('agent-chat-overlay');
+      const input = document.getElementById('agent-chat-input');
+      const sendBtn = document.getElementById('agent-chat-send-btn');
+
+      if (overlay) overlay.style.display = status === 'running' ? 'none' : 'flex';
+      if (input) input.disabled = status !== 'running';
+      if (sendBtn) sendBtn.disabled = status !== 'running';
     }
 
     // ── Terminal resize drag ──
@@ -1497,6 +1719,118 @@
       } finally {
         runBtn.disabled = false;
         runBtn.innerHTML = _editorState.sandboxId ? '▶ Re-run' : '▶ Run in Sandbox';
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Agent Sidebar Chat
+    // ═══════════════════════════════════════════════════════
+
+    function handleAgentChatKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendAgentMessage();
+      }
+    }
+
+    function renderAgentChatBubble(role, html) {
+      const container = document.getElementById('agent-chat-messages');
+      if (!container) return;
+
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `agent-chat-msg ${role}`;
+      msgDiv.innerHTML = `<div class="agent-chat-bubble">${html}</div>`;
+      container.appendChild(msgDiv);
+      container.scrollTop = container.scrollHeight;
+      return msgDiv;
+    }
+
+    async function sendAgentMessage() {
+      const input = document.getElementById('agent-chat-input');
+      const sendBtn = document.getElementById('agent-chat-send-btn');
+      if (!input || !sendBtn || input.disabled || !_editorState.sandboxId) return;
+
+      const text = input.value.trim();
+      if (!text) return;
+
+      input.value = '';
+      input.style.height = 'auto';
+      input.disabled = true;
+      sendBtn.disabled = true;
+
+      // Add to local history and UI
+      _editorState.agentChatHistory.push({ role: 'human', content: text });
+      renderAgentChatBubble('human', escapeHtml(text).replace(/\\n/g, '<br/>'));
+
+      const loadingBubble = renderAgentChatBubble('ai', '<span class="spinner"></span> Thinking...');
+
+      try {
+        // Create a dedicated thread for the agent chat request
+        const threadRes = await fetch(`${API_BASE}/threads`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const thread = await threadRes.json();
+
+        // payload is { action: "chat", sandbox_id: "...", chat_messages: [...] }
+        const payload = {
+          action: 'chat',
+          sandbox_id: _editorState.sandboxId,
+          chat_messages: _editorState.agentChatHistory
+        };
+
+        const runRes = await fetch(`${API_BASE}/threads/${thread.thread_id}/runs/wait`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            assistant_id: 'sandbox_agent',
+            input: {
+              messages: [{
+                role: 'human',
+                content: JSON.stringify(payload)
+              }]
+            }
+          })
+        });
+
+        if (!runRes.ok) {
+          throw new Error('Failed to run agent sandbox request');
+        }
+
+        const result = await runRes.json();
+
+        // Parse the sandbox response
+        const aiMsgs = (result.messages || []).filter(m => m.type === 'ai');
+        const lastAi = aiMsgs[aiMsgs.length - 1];
+        if (!lastAi || !lastAi.content) throw new Error('No response from sandbox agent');
+
+        const sandboxResult = parseJsonFromAiContent(lastAi.content);
+
+        if (sandboxResult.error) {
+          throw new Error(sandboxResult.error);
+        }
+
+        // Successfully got message back from the sandbox model
+        const agentResponse = sandboxResult.message;
+        if (!agentResponse) {
+          throw new Error('Sandbox returned empty message object');
+        }
+
+        // Add to history and update UI
+        _editorState.agentChatHistory.push(agentResponse);
+        const mdHtml = marked.parse(agentResponse.content || '*(empty response)*');
+        loadingBubble.innerHTML = `<div class="agent-chat-bubble">${mdHtml}</div>`;
+
+      } catch (err) {
+        console.error('Agent chat error:', err);
+        loadingBubble.innerHTML = `<div class="agent-chat-bubble" style="color:var(--error)">Error: ${err.message}</div>`;
+      } finally {
+        input.disabled = false;
+        sendBtn.disabled = false;
+        input.focus();
+        const container = document.getElementById('agent-chat-messages');
+        if (container) container.scrollTop = container.scrollHeight;
       }
     }
 

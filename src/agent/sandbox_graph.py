@@ -59,6 +59,15 @@ def sandbox_node(state: MessagesState) -> MessagesState:
             result = {"error": "No files provided"}
         else:
             result = create_and_run(files)
+    elif action == "chat":
+        sandbox_id = action_data.get("sandbox_id")
+        chat_messages = action_data.get("chat_messages", [])
+        if not sandbox_id:
+            result = {"error": "No sandbox_id provided"}
+        else:
+            # Import here to avoid circular dependencies if any
+            from src.tools.sandbox_tools import chat_with_agent
+            result = chat_with_agent(sandbox_id, chat_messages)
     else:
         result = {"error": f"Unknown action: {action}"}
 
