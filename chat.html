@@ -1094,6 +1094,94 @@
         height: 90vh;
       }
     }
+
+    /* ───── Floating Reopen Button ───── */
+    .deploy-float-btn {
+      position: fixed;
+      bottom: 90px;
+      right: 24px;
+      z-index: 150;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 40px;
+      border: 1px solid rgba(108, 99, 255, 0.35);
+      background: linear-gradient(135deg, rgba(108, 99, 255, 0.15), rgba(90, 79, 255, 0.08));
+      backdrop-filter: blur(12px);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 20px rgba(108, 99, 255, 0.2);
+      animation: floatIn 0.35s ease;
+    }
+
+    .deploy-float-btn:hover {
+      border-color: var(--accent);
+      background: linear-gradient(135deg, rgba(108, 99, 255, 0.25), rgba(90, 79, 255, 0.15));
+      box-shadow: 0 6px 28px rgba(108, 99, 255, 0.35);
+      transform: translateY(-2px);
+    }
+
+    .deploy-float-btn .float-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+
+    .deploy-float-btn .float-dot.running {
+      background: var(--success);
+      box-shadow: 0 0 8px rgba(78, 205, 196, 0.5);
+      animation: pulse 1.5s infinite;
+    }
+
+    .deploy-float-btn .float-dot.idle {
+      background: var(--accent);
+    }
+
+    .deploy-float-btn .float-dot.stopped {
+      background: var(--error);
+    }
+
+    .deploy-float-btn .float-dot.creating {
+      background: #f0ad4e;
+      animation: pulse 1s infinite;
+    }
+
+    .deploy-float-btn .float-discard {
+      margin-left: 4px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: none;
+      background: rgba(255, 107, 107, 0.15);
+      color: var(--error);
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .deploy-float-btn .float-discard:hover {
+      background: rgba(255, 107, 107, 0.3);
+    }
+
+    @keyframes floatIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
   </style>
 </head>
 
@@ -1107,6 +1195,13 @@
     <div class="header-spacer"></div>
     <button class="new-chat-btn" onclick="newChat()">+ New Chat</button>
   </div>
+
+  <!-- Floating reopen button (hidden by default) -->
+  <button class="deploy-float-btn" id="deploy-float-btn" onclick="reopenEditor()">
+    <span class="float-dot" id="float-dot"></span>
+    <span id="float-label">Agent Ready</span>
+    <span class="float-discard" onclick="event.stopPropagation(); discardEditor()" title="Discard session">✕</span>
+  </button>
 
   <!-- Messages -->
   <div class="messages" id="messages">
@@ -1292,29 +1387,53 @@
       const raw = (text || '').trim();
       if (!raw) throw new Error('Empty response');
 
-      const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-      const candidate = (match ? match[1] : raw).trim();
+      // Strategy 1: Direct parse
+      try { return JSON.parse(raw); } catch { }
 
-      try {
-        return JSON.parse(candidate);
-      } catch { }
-
-      try {
-        return JSON.parse(raw);
-      } catch { }
-
-      if (/\\\\[nrt"]/.test(candidate)) {
-        try {
-          return JSON.parse(unescapeJsonish(candidate));
-        } catch { }
+      // Strategy 2: Extract from markdown code fences (greedy to get full content)
+      const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*)```/);
+      if (fenceMatch) {
+        const fenced = fenceMatch[1].trim();
+        try { return JSON.parse(fenced); } catch { }
       }
 
+      // Strategy 3: Find the outermost { ... } by brace matching
+      //   This handles cases where the model adds text before/after the JSON
+      const firstBrace = raw.indexOf('{');
+      if (firstBrace >= 0) {
+        let depth = 0;
+        let inString = false;
+        let escape = false;
+        let lastBrace = -1;
+        for (let i = firstBrace; i < raw.length; i++) {
+          const ch = raw[i];
+          if (escape) { escape = false; continue; }
+          if (ch === '\\') { escape = true; continue; }
+          if (ch === '"' && !escape) { inString = !inString; continue; }
+          if (inString) continue;
+          if (ch === '{') depth++;
+          if (ch === '}') { depth--; if (depth === 0) { lastBrace = i; break; } }
+        }
+        if (lastBrace > firstBrace) {
+          const extracted = raw.substring(firstBrace, lastBrace + 1);
+          try { return JSON.parse(extracted); } catch { }
+        }
+      }
+
+      // Strategy 4: Non-greedy fence match (for when there are multiple fence blocks)
+      const fenceMatch2 = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (fenceMatch2) {
+        const fenced2 = fenceMatch2[1].trim();
+        try { return JSON.parse(fenced2); } catch { }
+      }
+
+      // Strategy 5: Try unescaping over-escaped strings
       if (/\\\\[nrt"]/.test(raw)) {
-        try {
-          return JSON.parse(unescapeJsonish(raw));
-        } catch { }
+        try { return JSON.parse(unescapeJsonish(raw)); } catch { }
       }
 
+      // Log the raw content for debugging
+      console.error('parseJsonFromText: All strategies failed. Raw content (first 2000 chars):', raw.slice(0, 2000));
       throw new Error('Invalid JSON from agent');
     }
 
@@ -1356,10 +1475,22 @@
     };
 
     function showEditor(agentName, description, files) {
-      // Clean up previous editor if open
+      // If we have a hidden overlay, just show it again
+      if (_editorState.overlay && _editorState.overlay.parentNode) {
+        _editorState.overlay.style.display = 'flex';
+        hideFloatButton();
+        // Refresh the active CodeMirror editor so it renders properly
+        const activeFile = _editorState.files[_editorState.activeIdx];
+        if (activeFile && _editorState.editors[activeFile.filename]) {
+          setTimeout(() => _editorState.editors[activeFile.filename].refresh(), 50);
+        }
+        return;
+      }
+
+      // Clean up previous editor if exists in detached state
       if (_editorState.overlay) _editorState.overlay.remove();
 
-      // Clone files so we can mutate content
+      // Clone files so we can mutate content (may be empty initially)
       _editorState.files = files.map(f => ({ ...f }));
       _editorState.editors = {};
       _editorState.activeIdx = 0;
@@ -1374,19 +1505,21 @@
       overlay.onclick = (e) => { if (e.target === overlay) closeEditor(); };
       _editorState.overlay = overlay;
 
+      const hasFiles = files.length > 0;
+
       overlay.innerHTML = `
       <div class="code-modal">
         <div class="code-modal-header">
           <h2>${escapeHtml(agentName)} — ${escapeHtml(description)}</h2>
           <div class="sandbox-status" id="sandbox-status">
-            <span class="status-dot" id="status-dot"></span>
-            <span id="status-text">Ready</span>
+            <span class="status-dot ${hasFiles ? '' : 'creating'}" id="status-dot"></span>
+            <span id="status-text">${hasFiles ? 'Ready' : 'Generating files...'}</span>
           </div>
           <div class="header-actions">
             <button class="run-btn" id="run-sandbox-btn" onclick="runInSandbox()">▶ Run in Sandbox</button>
             <button class="download-btn" onclick="downloadAllFiles()">↓ Download</button>
           </div>
-          <button class="close-btn" onclick="closeEditor()">&times;</button>
+          <button class="close-btn" onclick="closeEditor()" title="Minimize (state preserved)">&times;</button>
         </div>
         
         <div class="modal-layout">
@@ -1405,7 +1538,7 @@
                   <button class="terminal-clear-btn" onclick="clearTerminal()">Clear</button>
                 </div>
                 <div class="terminal-body" id="terminal-body">
-                  <div class="term-line term-system">Ready — click "Run in Sandbox" to deploy and execute your agent</div>
+                  <div class="term-line term-system">${hasFiles ? 'Ready — click "Run in Sandbox" to deploy and execute your agent' : 'Generating agent files...'}</div>
                 </div>
               </div>
             </div>
@@ -1439,23 +1572,110 @@
       </div>`;
 
       document.body.appendChild(overlay);
+      hideFloatButton();
 
-      // Render tabs
-      renderEditorTabs();
-      // Open first file
-      openFileInEditor(0);
+      // Render tabs & editor
+      if (hasFiles) {
+        renderEditorTabs();
+        openFileInEditor(0);
+      } else {
+        // Show generating placeholder in the editor pane
+        const pane = document.getElementById('editor-pane');
+        if (pane) {
+          pane.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:14px;gap:10px;">
+            <span class="spinner" style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.15);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;"></span>
+            Generating agent files…
+          </div>`;
+        }
+      }
       // Setup terminal resize
       setupTerminalResize();
+    }
+
+    /**
+     * Add a single file to the already-open editor modal with a tab animation.
+     * Used by deploySample to stagger files in one-by-one.
+     */
+    function addFileToEditor(file) {
+      _editorState.files.push({ ...file });
+      renderEditorTabs();
+      // If this is the first file, open it in the editor and clear the placeholder
+      if (_editorState.files.length === 1) {
+        openFileInEditor(0);
+      }
+      // Animate the new tab
+      const tabsEl = document.getElementById('editor-tabs');
+      if (tabsEl) {
+        const lastTab = tabsEl.lastElementChild;
+        if (lastTab) {
+          lastTab.style.animation = 'fadeIn 0.3s ease';
+        }
+      }
+      termLog(`  + ${file.filename}`, 'term-info');
     }
 
     function closeEditor() {
       if (_editorState.overlay) {
         // Save all editor contents back to files array
         saveAllEditors();
+        // Hide instead of destroy — preserve all state
+        _editorState.overlay.style.display = 'none';
+        showFloatButton();
+      }
+    }
+
+    // Fully destroy the modal and all state
+    function discardEditor() {
+      hideFloatButton();
+      if (_editorState.overlay) {
         _editorState.overlay.remove();
         _editorState.overlay = null;
         _editorState.editors = {};
+        _editorState.files = [];
+        _editorState.sandboxId = null;
+        _editorState.sandboxStatus = 'idle';
+        _editorState.agentName = '';
+        _editorState.description = '';
+        _editorState.agentChatHistory = [];
       }
+    }
+
+    // Reopen the hidden modal
+    function reopenEditor() {
+      if (_editorState.overlay && _editorState.overlay.parentNode) {
+        _editorState.overlay.style.display = 'flex';
+        hideFloatButton();
+        // Refresh CodeMirror so it renders correctly
+        const activeFile = _editorState.files[_editorState.activeIdx];
+        if (activeFile && _editorState.editors[activeFile.filename]) {
+          setTimeout(() => _editorState.editors[activeFile.filename].refresh(), 50);
+        }
+      }
+    }
+
+    // Floating button helpers
+    function showFloatButton() {
+      const btn = document.getElementById('deploy-float-btn');
+      const dot = document.getElementById('float-dot');
+      const label = document.getElementById('float-label');
+      if (!btn) return;
+
+      // Update status from current editor state
+      const status = _editorState.sandboxStatus || 'idle';
+      const statusLabels = {
+        running: '🚀 Agent Running',
+        creating: '⏳ Creating...',
+        stopped: '⛔ Agent Stopped',
+        idle: '📦 Agent Ready',
+      };
+      if (dot) dot.className = 'float-dot ' + status;
+      if (label) label.textContent = statusLabels[status] || '📦 Agent Ready';
+      btn.style.display = 'flex';
+    }
+
+    function hideFloatButton() {
+      const btn = document.getElementById('deploy-float-btn');
+      if (btn) btn.style.display = 'none';
     }
 
     function renderEditorTabs() {
@@ -1511,6 +1731,21 @@
 
       cm.setValue(file.content);
       _editorState.editors[file.filename] = cm;
+
+      // Add debounced hot reload listener
+      cm.on('change', () => {
+        // Only trigger hot reload if we already have an active sandbox
+        if (!_editorState.sandboxId) return;
+
+        // Visual indicator that we're waiting to sync
+        updateSandboxStatus('running', 'Waiting to sync...');
+
+        clearTimeout(_editorState._reloadTimeout);
+        _editorState._reloadTimeout = setTimeout(() => {
+          saveAllEditors();
+          hotReloadSandbox();
+        }, 1500);
+      });
 
       // Refresh after DOM settles
       setTimeout(() => cm.refresh(), 50);
@@ -1591,6 +1826,12 @@
       if (overlay) overlay.style.display = status === 'running' ? 'none' : 'flex';
       if (input) input.disabled = status !== 'running';
       if (sendBtn) sendBtn.disabled = status !== 'running';
+
+      // Also update float button if modal is hidden
+      const floatBtn = document.getElementById('deploy-float-btn');
+      if (floatBtn && floatBtn.style.display === 'flex') {
+        showFloatButton();
+      }
     }
 
     // ── Terminal resize drag ──
@@ -1627,6 +1868,11 @@
     // ═══════════════════════════════════════════════════════
 
     async function runInSandbox() {
+      // If we already have a sandbox, use hot reload instead of creating a new one
+      if (_editorState.sandboxId) {
+        return hotReloadSandbox();
+      }
+
       const runBtn = document.getElementById('run-sandbox-btn');
       if (!runBtn || runBtn.disabled) return;
 
@@ -1690,7 +1936,20 @@
 
         if (sandboxResult.steps && Array.isArray(sandboxResult.steps)) {
           for (const step of sandboxResult.steps) {
-            termLog(`⟫ ${step.command || step.action}`, 'term-cmd');
+            // Style debug/fix steps distinctly
+            const isDebug = step.action === 'debug_fix' || step.action === 'chat_debug_fix';
+            const isRewrite = step.action === 'rewrite_files';
+            const isFixDeps = step.action === 'install_fix_deps';
+
+            if (isDebug) {
+              termLog(`⟳ ${step.command || step.action}`, 'term-info');
+            } else if (isRewrite) {
+              termLog(`✏ ${step.command || step.action}`, 'term-info');
+            } else if (isFixDeps) {
+              termLog(`📦 ${step.command || step.action}`, 'term-info');
+            } else {
+              termLog(`⟫ ${step.command || step.action}`, 'term-cmd');
+            }
             if (step.stdout) termLog(step.stdout);
             if (step.stderr) termLog(step.stderr, 'term-err');
             if (step.exit_code !== undefined && step.exit_code !== 0) {
@@ -1701,6 +1960,11 @@
 
         if (sandboxResult.output) {
           termLog(sandboxResult.output);
+        }
+
+        // Show retry count if debugging happened
+        if (sandboxResult.retry_count && sandboxResult.retry_count > 0) {
+          termLog(`ℹ Auto-fixed after ${sandboxResult.retry_count} debug cycle(s)`, 'term-info');
         }
 
         if (sandboxResult.error) {
@@ -1719,6 +1983,198 @@
       } finally {
         runBtn.disabled = false;
         runBtn.innerHTML = _editorState.sandboxId ? '▶ Re-run' : '▶ Run in Sandbox';
+      }
+    }
+
+    async function hotReloadSandbox() {
+      const runBtn = document.getElementById('run-sandbox-btn');
+      if (runBtn) {
+        runBtn.disabled = true;
+        runBtn.innerHTML = '<span class="spinner"></span> Syncing...';
+      }
+
+      try {
+        updateSandboxStatus('running', 'Syncing & Restarting...');
+        termLog('⟲ Hot reloading agent...', 'term-cmd');
+
+        // Create a thread for sandbox_agent
+        const threadRes = await fetch(`${API_BASE}/threads`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const thread = await threadRes.json();
+
+        // Call sandbox_agent with hot_reload + files + existing sandbox_id
+        const reloadRes = await fetch(`${API_BASE}/threads/${thread.thread_id}/runs/wait`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            assistant_id: 'sandbox_agent',
+            input: {
+              messages: [{
+                role: 'human',
+                content: JSON.stringify({
+                  action: 'hot_reload',
+                  sandbox_id: _editorState.sandboxId,
+                  files: _editorState.files.map(f => ({
+                    filename: f.filename,
+                    content: f.content
+                  }))
+                })
+              }]
+            }
+          })
+        });
+
+        if (!reloadRes.ok) {
+          const errText = await reloadRes.text();
+          throw new Error(`Sandbox API error (${reloadRes.status}): ${errText.slice(0, 200)}`);
+        }
+
+        const result = await reloadRes.json();
+
+        // Parse the sandbox response
+        const aiMsgs = (result.messages || []).filter(m => m.type === 'ai');
+        const lastAi = aiMsgs[aiMsgs.length - 1];
+        if (!lastAi || !lastAi.content) throw new Error('No response from sandbox agent');
+
+        const sandboxResult = parseJsonFromAiContent(lastAi.content);
+
+        // Display output
+        if (sandboxResult.steps && Array.isArray(sandboxResult.steps)) {
+          for (const step of sandboxResult.steps) {
+            const isDebug = step.action === 'debug_fix' || step.action === 'chat_debug_fix';
+            const isRewrite = step.action === 'rewrite_files';
+            const isFixDeps = step.action === 'install_fix_deps';
+
+            if (isDebug) termLog(`⟳ ${step.command || step.action}`, 'term-info');
+            else if (isRewrite) termLog(`✏ ${step.command || step.action}`, 'term-info');
+            else if (isFixDeps) termLog(`📦 ${step.command || step.action}`, 'term-info');
+            else termLog(`⟫ ${step.command || step.action}`, 'term-cmd');
+
+            if (step.stdout) termLog(step.stdout);
+            if (step.stderr) termLog(step.stderr, 'term-err');
+            if (step.exit_code !== undefined && step.exit_code !== 0) {
+              termLog(`✗ Exit code: ${step.exit_code}`, 'term-err');
+            }
+          }
+        }
+
+        if (sandboxResult.output) termLog(sandboxResult.output);
+
+        if (sandboxResult.retry_count && sandboxResult.retry_count > 0) {
+          termLog(`ℹ Auto-fixed after ${sandboxResult.retry_count} debug cycle(s)`, 'term-info');
+        }
+
+        if (sandboxResult.error) {
+          termLog(`✗ Error: ${sandboxResult.error}`, 'term-err');
+          updateSandboxStatus('stopped', 'Error');
+        } else {
+          updateSandboxStatus('running', 'Running');
+          termLog('✓ Agent synced and running!', 'term-info');
+        }
+
+      } catch (err) {
+        console.error('Hot reload error:', err);
+        termLog(`✗ ${err.message}`, 'term-err');
+        updateSandboxStatus('stopped', 'Failed');
+        showError(`Hot reload error: ${err.message}`);
+      } finally {
+        if (runBtn) {
+          runBtn.disabled = false;
+          runBtn.innerHTML = '▶ Re-run';
+        }
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // E2B Sandbox Hot Reload
+    // ═══════════════════════════════════════════════════════
+
+    async function hotReloadSandbox() {
+      if (!_editorState.sandboxId) return;
+
+      const runBtn = document.getElementById('run-sandbox-btn');
+      if (runBtn) runBtn.disabled = true;
+
+      try {
+        termLog('⟫ Syncing changes to sandbox...', 'term-cmd');
+
+        // Create a thread for sandbox_agent
+        const threadRes = await fetch(`${API_BASE}/threads`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const thread = await threadRes.json();
+
+        // Call sandbox_agent with hot_reload + files + sandbox_id
+        const reqRes = await fetch(`${API_BASE}/threads/${thread.thread_id}/runs/wait`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            assistant_id: 'sandbox_agent',
+            input: {
+              messages: [{
+                role: 'human',
+                content: JSON.stringify({
+                  action: 'hot_reload',
+                  sandbox_id: _editorState.sandboxId,
+                  files: _editorState.files.map(f => ({
+                    filename: f.filename,
+                    content: f.content
+                  }))
+                })
+              }]
+            }
+          })
+        });
+
+        if (!reqRes.ok) throw new Error(`Sync error (${reqRes.status})`);
+
+        const result = await reqRes.json();
+        const aiMsgs = (result.messages || []).filter(m => m.type === 'ai');
+        const lastAi = aiMsgs[aiMsgs.length - 1];
+        if (!lastAi || !lastAi.content) throw new Error('No response from sandbox agent');
+
+        const sandboxResult = parseJsonFromAiContent(lastAi.content);
+
+        // Display output
+        if (sandboxResult.steps && Array.isArray(sandboxResult.steps)) {
+          for (const step of sandboxResult.steps) {
+            const isDebug = step.action === 'debug_fix';
+            const isRewrite = step.action === 'rewrite_files';
+
+            if (isDebug) termLog(`⟳ ${step.command || step.action}`, 'term-info');
+            else if (isRewrite) termLog(`✏ ${step.command || step.action}`, 'term-info');
+            else termLog(`⟫ ${step.command || step.action}`, 'term-cmd');
+
+            if (step.stdout) termLog(step.stdout);
+            if (step.stderr) termLog(step.stderr, 'term-err');
+            if (step.exit_code !== undefined && step.exit_code !== 0) {
+              termLog(`✗ Exit code: ${step.exit_code}`, 'term-err');
+            }
+          }
+        }
+
+        if (sandboxResult.error) {
+          termLog(`✗ Sync Error: ${sandboxResult.error}`, 'term-err');
+          updateSandboxStatus('stopped', 'Error');
+        } else {
+          updateSandboxStatus('running', 'Running');
+          termLog('✓ Agent synced and running!', 'term-info');
+        }
+
+      } catch (err) {
+        console.error('Hot reload error:', err);
+        termLog(`✗ ${err.message}`, 'term-err');
+        updateSandboxStatus('stopped', 'Failed');
+      } finally {
+        if (runBtn) {
+          runBtn.disabled = false;
+          runBtn.innerHTML = '▶ Re-run';
+        }
       }
     }
 
@@ -1850,7 +2306,11 @@
           return;
         }
 
-        // Create a separate thread for deploy_agent
+        // 1) Discard any previous session and open the modal with empty files (generating state)
+        discardEditor();
+        showEditor('Agent', 'Generating…', []);
+
+        // 2) Create a separate thread for deploy_agent
         const threadRes = await fetch(`${API_BASE}/threads`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1862,6 +2322,8 @@
         const contextSummary = messages.map(m =>
           `${m.role === 'human' ? 'USER' : 'ASSISTANT'}: ${m.content.slice(0, 500)}`
         ).join('\n\n');
+
+        termLog('⟫ Calling deploy agent...', 'term-cmd');
 
         // Call deploy_agent (wait, not stream)
         const runRes = await fetch(`${API_BASE}/threads/${thread.thread_id}/runs/wait`, {
@@ -1888,22 +2350,52 @@
         if (!lastAi || !lastAi.content) throw new Error('No response from deploy agent');
 
         // Parse the JSON from the response
+        console.log('Deploy agent raw content type:', typeof lastAi.content, Array.isArray(lastAi.content) ? 'array' : '');
+        console.log('Deploy agent raw content (first 500):', typeof lastAi.content === 'string' ? lastAi.content.slice(0, 500) : JSON.stringify(lastAi.content).slice(0, 500));
+        termLog('⟫ Parsing deploy agent response...', 'term-cmd');
         const codeSpec = parseJsonFromAiContent(lastAi.content);
 
         if (!codeSpec.files || !Array.isArray(codeSpec.files)) {
           throw new Error('Invalid response format — no files array');
         }
 
-        // Open the code editor (replaces old showCodeViewer)
-        showEditor(
-          codeSpec.agent_name || 'generated_agent',
-          codeSpec.description || 'Generated LangGraph Agent',
-          codeSpec.files
-        );
+        // 3) Update the modal header with the real agent name
+        const headerH2 = _editorState.overlay?.querySelector('.code-modal-header h2');
+        if (headerH2) {
+          headerH2.textContent = `${codeSpec.agent_name || 'generated_agent'} — ${codeSpec.description || 'Generated LangGraph Agent'}`;
+        }
+        _editorState.agentName = codeSpec.agent_name || 'generated_agent';
+        _editorState.description = codeSpec.description || 'Generated LangGraph Agent';
+
+        // 4) Stagger files in one-by-one with a visual delay
+        termLog('✓ Files generated:', 'term-info');
+        for (let i = 0; i < codeSpec.files.length; i++) {
+          addFileToEditor(codeSpec.files[i]);
+          // Small delay between files for visual effect (skip for last file)
+          if (i < codeSpec.files.length - 1) {
+            await new Promise(r => setTimeout(r, 150));
+          }
+        }
+
+        // Update status from generating to ready-ish before auto-run
+        const dot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        if (dot) dot.className = 'status-dot idle';
+        if (statusText) statusText.textContent = 'Files ready';
+
+        // 5) Auto-run the sandbox (no manual click needed)
+        termLog('', '');
+        await runInSandbox();
 
       } catch (err) {
         console.error('Deploy error:', err);
+        termLog(`✗ ${err.message}`, 'term-err');
         showError(`Deploy failed: ${err.message}`);
+        // Update modal status if it's open
+        const dot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        if (dot) dot.className = 'status-dot stopped';
+        if (statusText) statusText.textContent = 'Failed';
       } finally {
         btn.disabled = false;
         btn.innerHTML = 'Deploy';

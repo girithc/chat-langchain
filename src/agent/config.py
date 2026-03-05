@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from typing import Optional
 
 import dotenv
-from langchain.agents.middleware import ModelFallbackMiddleware
 from langchain.chat_models import init_chat_model
 
 from src.middleware.retry_middleware import ModelRetryMiddleware
@@ -107,14 +106,14 @@ MODELS: dict[str, ModelConfig] = {
 }
 
 # Default models for different use cases
-DEFAULT_MODEL = MODELS["claude-haiku"]
+DEFAULT_MODEL = MODELS["gpt-5-mini"]
 GUARDRAILS_MODEL = MODELS["grok-4.1-fast"]
 
 # Fallback chain (in order of preference)
 FALLBACK_MODELS = [
-    MODELS["claude-haiku"],
-    MODELS["grok-4.1-fast"],
     MODELS["gpt-5-mini"],
+    MODELS["grok-4.1-fast"],
+    MODELS["claude-haiku"],
     MODELS["claude-sonnet"],
 ]
 
@@ -156,13 +155,11 @@ anthropic_configurable_model = init_chat_model(
 )
 
 # =============================================================================
-# Middleware
+# Configuration
 # =============================================================================
 
+# Retry configuration
 model_retry_middleware = ModelRetryMiddleware(max_retries=MAX_RETRIES)
-
-model_fallback_middleware = ModelFallbackMiddleware(*[m.id for m in FALLBACK_MODELS])
-logger.info(f"Fallback chain: {' -> '.join(m.name for m in FALLBACK_MODELS)}")
 
 # =============================================================================
 # Exports
@@ -178,10 +175,8 @@ __all__ = [
     # Configurable models
     "configurable_model",
     "anthropic_configurable_model",
-    # Middleware
-    "model_retry_middleware",
-    "model_fallback_middleware",
     # Config
+    "model_retry_middleware",
     "MAX_RETRIES",
     "logger",
 ]

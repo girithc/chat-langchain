@@ -20,33 +20,44 @@ The JSON must have this exact structure:
 Generate these files (all paths relative to project root):
 
 ### 1. `agent.py` — Main agent/graph definition
-- Import from `langchain.agents` and `langchain.chat_models`
-- Use `create_agent()` for agent-based systems
+- Import `create_react_agent` from `langgraph.prebuilt`
+- Import `init_chat_model` from `langchain.chat_models`
+- Use `create_react_agent()` for agent-based systems — this creates a compiled LangGraph StateGraph
 - For RAG, build the full retrieval pipeline (loader → splitter → embeddings → vector store → retriever → chain)
 - For workflows, use `StateGraph` from `langgraph.graph`
 - **Always include LangSmith tracing** via environment config
-- Export the graph variable that matches `langgraph.json`
+- Export the compiled graph as `graph` and reference it in `langgraph.json`
+- **IMPORTANT**: The compiled graph expects dict input like `{"messages": [("human", "text")]}`, never a raw string
 
 ### 2. `tools.py` — Tool definitions (if applicable)
-- Use `@tool` decorator from `langchain.tools`
+- Use `@tool` decorator from `langchain_core.tools`
 - Include proper docstrings (the LLM reads these to decide when to call each tool)
 - Make tools functional with **real logic tailored to the user's use case**
 - Use appropriate APIs based on conversation context
 - If the user mentioned specific APIs, databases, or services, include those integrations
 
-### 3. `prompts.py` — System prompt
+### 3. `prompts.py` — System prompt (MUST be valid Python!)
+- The file MUST be valid Python code — assign the prompt to a variable called `system_prompt`
+- Use triple-quoted strings: `system_prompt = """Your prompt here..."""`
+- **NEVER** write raw text without a variable assignment — that causes a SyntaxError
 - **Domain-specific** — tailored to the user's exact use case from the conversation
 - Clear role definition reflecting what the user wants to build
 - Tool usage instructions if tools are involved
-- Response format guidelines appropriate to the domain
-- Constraints and rules inferred from the conversation
+- Example format:
+```python
+system_prompt = """You are a helpful assistant specialized in...
+
+## Your capabilities:
+- ...
+"""
+```
 
 ### 4. `langgraph.json` — LangSmith deployment config
 ```json
 {
   "dependencies": ["."],
   "graphs": {
-    "AGENT_NAME": "./agent.py:graph_variable"
+    "AGENT_NAME": "./agent.py:graph"
   },
   "env": ".env"
 }
@@ -102,12 +113,14 @@ Include:
 
 ## Code Patterns
 
-### Agent with LangSmith Tracing:
+### Agent with LangSmith Tracing (using `create_react_agent`):
 ```python
 import os
 from dotenv import load_dotenv
-from langchain.agents import create_agent
+from langgraph.prebuilt import create_react_agent
 from langchain.chat_models import init_chat_model
+from prompts import system_prompt
+from tools import my_tool
 
 load_dotenv()
 
@@ -117,10 +130,10 @@ load_dotenv()
 
 model = init_chat_model("openai:gpt-4o-mini")
 
-agent = create_agent(
+graph = create_react_agent(
     model=model,
-    tools=[...],
-    system_prompt=system_prompt,
+    tools=[my_tool],
+    prompt=system_prompt,
 )
 ```
 
