@@ -313,7 +313,7 @@ def handle_chat(state: SandboxState) -> SandboxState:
         return {
             **state,
             "error": result["error"],
-            "chat_response": None,
+            "chat_response": result,  # Keep result so stderr is preserved
         }
 
     return {
@@ -426,13 +426,28 @@ def format_response(state: SandboxState) -> SandboxState:
     action = state.get("action", "")
 
     if action == "chat":
-        if state.get("chat_response") and state["chat_response"].get("message"):
-            result = {
-                "message": state["chat_response"]["message"],
+        result = {"steps": state.get("steps", [])}
+        chat_resp = state.get("chat_response") or {}
+        if chat_resp.get("message"):
+            result.update({
+                "message": chat_resp["message"],
                 "error": None,
-            }
+            })
+            if chat_resp.get("trace_url"):
+                result["trace_url"] = chat_resp["trace_url"]
+            if chat_resp.get("trace_data"):
+                result["trace_data"] = chat_resp["trace_data"]
         else:
-            result = {"error": state.get("error", "Chat failed after retries")}
+            err_msg = state.get("error") or chat_resp.get("error") or "Chat failed after retries"
+            stderr = chat_resp.get("stderr", "")
+            result.update({
+                "error": err_msg,
+                "stderr": stderr,
+            })
+            if chat_resp.get("trace_url"):
+                result["trace_url"] = chat_resp["trace_url"]
+            if chat_resp.get("trace_data"):
+                result["trace_data"] = chat_resp["trace_data"]
     elif action == "error":
         result = {"error": state.get("error", "Unknown error")}
     else:

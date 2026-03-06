@@ -14,8 +14,8 @@ from e2b import Sandbox
 
 logger = logging.getLogger(__name__)
 
-# Sandbox timeout: 5 minutes (in seconds)
-SANDBOX_TIMEOUT_SECONDS = 5 * 60
+# Sandbox timeout: 10 minutes (in seconds)
+SANDBOX_TIMEOUT_SECONDS = 10 * 60
 
 
 # ═══════════════════════════════════════════════════════════
@@ -344,8 +344,11 @@ def rewrite_sandbox_files(sandbox, fixed_files: list[dict]) -> dict:
         return {"steps": steps, "error": None}
 
     except Exception as e:
-        logger.error(f"File rewrite error: {e}")
-        return {"steps": steps, "error": str(e)}
+        err_msg = str(e)
+        logger.error(f"File rewrite error: {err_msg}")
+        if "404" in err_msg or "Not Found" in err_msg:
+            return {"steps": steps, "error": "This sandbox was paused and evicted by E2B due to inactivity. Please click 'Re-run' to deploy a fresh instance."}
+        return {"steps": steps, "error": err_msg}
 
 
 def read_sandbox_files(sandbox, filenames: list[str]) -> dict[str, str]:
@@ -373,6 +376,13 @@ def chat_with_agent(sandbox_id: str, messages: list[dict]) -> dict:
     logger.info(f"Connecting to sandbox {sandbox_id} for chat...")
     try:
         sandbox = Sandbox.connect(sandbox_id)
+        
+        # Refresh the timeout so it doesn't die while the user is chatting
+        if hasattr(sandbox, "set_timeout"):
+            try:
+                sandbox.set_timeout(SANDBOX_TIMEOUT_SECONDS)
+            except Exception as set_timeout_err:
+                logger.warning(f"Could not refresh sandbox timeout: {set_timeout_err}")
 
         # Upload the runner script
         runner_path = Path(__file__).parent / "sandbox_runner_template.py"
@@ -386,7 +396,7 @@ def chat_with_agent(sandbox_id: str, messages: list[dict]) -> dict:
         payload = json.dumps({"messages": messages})
         sandbox.files.write("/home/user/project/_chat_input.json", payload)
 
-        # Execute runner.py
+        # Execute runner.py directly (it loads .env via python-dotenv)
         result = sandbox.commands.run(
             "cd /home/user/project && python runner.py",
             timeout=60,
@@ -410,9 +420,16 @@ def chat_with_agent(sandbox_id: str, messages: list[dict]) -> dict:
             for line in reversed(lines):
                 try:
                     response = json.loads(line)
+                    logger.info(f"runner.py JSON: {line}")
                     if "error" in response:
                         return {"error": response["error"], "stderr": ""}
-                    return {"message": response.get("message"), "error": None, "stderr": ""}
+                    return {
+                        "message": response.get("message"),
+                        "trace_url": response.get("trace_url"),
+                        "trace_data": response.get("trace_data"),
+                        "error": None,
+                        "stderr": ""
+                    }
                 except json.JSONDecodeError:
                     continue
 
@@ -422,5 +439,11 @@ def chat_with_agent(sandbox_id: str, messages: list[dict]) -> dict:
             return {"error": f"Failed to parse agent output: {e}", "stderr": ""}
 
     except Exception as e:
-        logger.error(f"Sandbox chat error: {e}")
-        return {"error": str(e), "stderr": str(e)}
+        err_msg = str(e)
+        logger.error(f"Sandbox chat error: {err_msg}")
+        if "404" in err_msg or "Not Found" in err_msg:
+            return {
+                "error": "This sandbox was paused and evicted by E2B due to inactivity. Please click 'Re-run' to deploy a fresh instance.",
+                "stderr": err_msg,
+            }
+        return {"error": err_msg, "stderr": err_msg}

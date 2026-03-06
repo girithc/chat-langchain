@@ -475,9 +475,33 @@
       padding: 12px 20px;
       border-radius: 10px;
       font-size: 13px;
-      z-index: 100;
-      animation: fadeIn 0.3s ease;
+      z-index: 1000;
+      animation: floatIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       max-width: 500px;
+    }
+
+    .msg-trace-btn {
+      position: absolute;
+      bottom: 6px;
+      right: 6px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+      z-index: 10;
+    }
+
+    .msg-trace-btn:hover {
+      background: rgba(108, 99, 255, 0.15);
+      border-color: rgba(108, 99, 255, 0.3);
+      color: var(--text-primary);
     }
 
     /* ───── Tool Calls ───── */
@@ -569,11 +593,10 @@
     }
 
     .code-modal {
-      width: 94vw;
-      max-width: 1100px;
+      width: 96vw;
+      max-width: 1400px;
       height: 90vh;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
+      background: var(--bg-primary);
       border-radius: 16px;
       display: flex;
       flex-direction: column;
@@ -583,7 +606,6 @@
 
     .code-modal-header {
       padding: 12px 20px;
-      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       gap: 12px;
@@ -793,6 +815,8 @@
       display: flex;
       flex-direction: column;
       min-height: 0;
+      position: relative;
+      /* For absolute children */
     }
 
     .editor-pane {
@@ -809,24 +833,21 @@
       border: none;
     }
 
-    .terminal-resize-bar {
-      height: 4px;
-      background: var(--border);
-      cursor: ns-resize;
-      flex-shrink: 0;
-      transition: background 0.2s;
-    }
-
-    .terminal-resize-bar:hover {
-      background: var(--accent);
-    }
-
     .terminal-pane {
-      height: 200px;
-      min-height: 80px;
+      width: 100%;
+      height: 250px;
       display: flex;
       flex-direction: column;
+      flex-shrink: 0;
       background: #0a0a0f;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+      transition: height 0.2s;
+    }
+
+    .terminal-pane.minimized {
+      display: none;
     }
 
     .terminal-header {
@@ -847,8 +868,13 @@
       letter-spacing: 0.5px;
     }
 
-    .terminal-clear-btn {
-      padding: 2px 8px;
+    .terminal-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .terminal-icon-btn {
+      padding: 2px 6px;
       border-radius: 4px;
       border: 1px solid var(--border);
       background: transparent;
@@ -858,7 +884,7 @@
       transition: all 0.2s;
     }
 
-    .terminal-clear-btn:hover {
+    .terminal-icon-btn:hover {
       border-color: var(--text-secondary);
       color: var(--text-secondary);
     }
@@ -895,28 +921,203 @@
       font-style: italic;
     }
 
-    /* ───── Agent Chat Sidebar ───── */
+    /* ───── IDE Layout & Agent Chat Sidebar ───── */
     .modal-layout {
       display: flex;
       flex: 1;
       min-height: 0;
       overflow: hidden;
+      gap: 16px;
+      padding: 0 16px 16px 16px;
     }
 
-    .editor-section {
+    .ide-sidebar {
+      width: 250px;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .ide-sidebar-header {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: rgba(10, 10, 15, 0.4);
+    }
+
+    .ide-sidebar-tab {
+      flex: 1;
+      padding: 10px 0;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .ide-sidebar-tab.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--accent);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .ide-sidebar-tab:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-secondary);
+    }
+
+    .ide-sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ide-view {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .ide-view.active {
+      display: flex;
+    }
+
+    /* Explorer View */
+    .explorer-file {
+      padding: 6px 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-left: 2px solid transparent;
+    }
+
+    .explorer-file.dirty::after {
+      content: '●';
+      margin-left: auto;
+      color: var(--accent);
+      font-size: 10px;
+    }
+
+    .explorer-file:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .explorer-file.active {
+      background: rgba(139, 92, 246, 0.15);
+      color: var(--accent);
+      border-left-color: var(--accent);
+    }
+
+    /* Source Control View */
+    .sc-empty {
+      padding: 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .sc-changes {
+      padding: 10px 0;
+    }
+
+    .sc-file {
+      padding: 6px 16px;
+      font-size: 13px;
+      color: var(--warning);
+      /* M modified color */
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .sc-file.added {
+      color: var(--success);
+    }
+
+    .sc-input-area {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sc-input-area textarea {
+      width: 100%;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+      color: var(--text-primary);
+      font-size: 13px;
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .sc-input-area textarea:focus {
+      border-color: var(--accent);
+      outline: none;
+    }
+
+    .sc-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .sc-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .sc-btn:disabled {
+      background: var(--border);
+      color: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    .editor-main {
       flex: 1;
       display: flex;
       flex-direction: column;
       min-width: 0;
-      border-right: 1px solid var(--border);
+      position: relative;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
     }
 
     .agent-sidebar {
+      position: relative;
       width: 380px;
+      min-width: 380px;
       display: flex;
       flex-direction: column;
-      background: var(--bg-tertiary);
       flex-shrink: 0;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .agent-sidebar.minimized {
+      display: none;
     }
 
     .agent-sidebar-header {
@@ -927,12 +1128,52 @@
       color: var(--text-primary);
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 8px;
       background: rgba(10, 10, 15, 0.4);
     }
 
+    .agent-header-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .agent-sidebar-header .icon {
       color: var(--accent);
+    }
+
+    .fab-container {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 90;
+    }
+
+    .fab-btn {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 10px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transition: all 0.2s;
+    }
+
+    .fab-btn:hover {
+      background: var(--surface);
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-2px);
     }
 
     .agent-chat-messages {
@@ -978,6 +1219,8 @@
       border: 1px solid var(--border);
       color: var(--text-primary);
       border-bottom-left-radius: 4px;
+      padding-bottom: 34px;
+      /* Extra room for the trace button */
     }
 
     .agent-chat-bubble pre {
@@ -1182,6 +1425,117 @@
         transform: translateY(0) scale(1);
       }
     }
+
+    /* ───── History Modal ───── */
+    .history-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 10, 15, 0.8);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .history-modal {
+      width: 600px;
+      max-width: 90vw;
+      max-height: 80vh;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .history-modal-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .history-modal-body {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .history-item {
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s;
+    }
+
+    .history-item:hover {
+      border-color: var(--accent);
+      background: rgba(108, 99, 255, 0.05);
+    }
+
+    .history-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .history-item-title {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-item-date {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .history-item-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .history-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .history-btn.load {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .history-btn.load:hover {
+      background: var(--accent-hover);
+    }
+
+    .history-btn.delete:hover {
+      border-color: var(--error);
+      color: var(--error);
+    }
   </style>
 </head>
 
@@ -1193,6 +1547,7 @@
     <div class="header-title">Chat LangChain</div>
     <div class="header-badge">● Local Dev</div>
     <div class="header-spacer"></div>
+    <button class="new-chat-btn" onclick="openHistoryModal()">History</button>
     <button class="new-chat-btn" onclick="newChat()">+ New Chat</button>
   </div>
 
@@ -1237,10 +1592,199 @@
     <div class="input-hint">Press Enter to send · Shift+Enter for new line</div>
   </div>
 
+  <!-- History Modal -->
+  <div class="history-modal-overlay" id="history-modal-overlay" onclick="closeHistoryModal(event)">
+    <div class="history-modal" onclick="event.stopPropagation()">
+      <div class="history-modal-header">
+        <span>Conversation History</span>
+        <button class="terminal-icon-btn" onclick="closeHistoryModal()"
+          style="font-size: 18px; color: var(--text-muted);">&times;</button>
+      </div>
+      <div class="history-modal-body" id="history-modal-body">
+        <!-- History items populated by JS -->
+      </div>
+    </div>
+  </div>
+
   <script>
     const API_BASE = 'http://127.0.0.1:2024';
     let threadId = null;
     let isStreaming = false;
+
+    // ═══════════════════════════════════════════════════════
+    // LocalStorage Chat Persistence
+    // ═══════════════════════════════════════════════════════
+
+    const STORAGE_KEY = 'chat_langchain_sessions';
+    let currentSessionId = null;
+
+    function getSavedSessions() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        return stored ? JSON.parse(stored) : [];
+      } catch (e) {
+        console.error("Failed to parse sessions from localStorage", e);
+        return [];
+      }
+    }
+
+    function saveSessions(sessions) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+      } catch (e) {
+        console.error("Failed to save sessions to localStorage", e);
+      }
+    }
+
+    function saveCurrentSession() {
+      if (!_editorState.files || _editorState.files.length === 0) return; // Only save if a sandbox was opened
+
+      if (!currentSessionId) {
+        currentSessionId = 'session_' + Date.now();
+      }
+
+      const session = {
+        id: currentSessionId,
+        title: _editorState.agentName || 'Generic Agent',
+        timestamp: Date.now(),
+        editorState: {
+          agentName: _editorState.agentName,
+          description: _editorState.description,
+          files: _editorState.originalFiles || _editorState.files,
+          sandboxId: _editorState.sandboxId,
+          agentChatHistory: _editorState.agentChatHistory || []
+        },
+        mainChatHtml: document.getElementById('messages').innerHTML
+      };
+
+      const sessions = getSavedSessions();
+      const existingIdx = sessions.findIndex(s => s.id === currentSessionId);
+
+      if (existingIdx >= 0) {
+        sessions[existingIdx] = session;
+      } else {
+        sessions.push(session);
+      }
+
+      saveSessions(sessions);
+    }
+
+    function openHistoryModal() {
+      renderHistoryModal();
+      document.getElementById('history-modal-overlay').style.display = 'flex';
+    }
+
+    function closeHistoryModal(e) {
+      if (e && e.target !== document.getElementById('history-modal-overlay')) return;
+      document.getElementById('history-modal-overlay').style.display = 'none';
+    }
+
+    function renderHistoryModal() {
+      const container = document.getElementById('history-modal-body');
+      const sessions = getSavedSessions();
+
+      // Sort newest first
+      sessions.sort((a, b) => b.timestamp - a.timestamp);
+
+      if (sessions.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color: var(--text-muted); padding: 40px;">No saved conversations yet.</div>';
+        return;
+      }
+
+      container.innerHTML = sessions.map(session => {
+        const date = new Date(session.timestamp).toLocaleString();
+        return `
+          <div class="history-item">
+            <div class="history-item-info">
+              <div class="history-item-title">${session.title}</div>
+              <div class="history-item-date">${date}</div>
+            </div>
+            <div class="history-item-actions">
+              <button class="history-btn delete" onclick="deleteSession('${session.id}')">Delete</button>
+              <button class="history-btn load" onclick="loadSession('${session.id}')">Load</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function deleteSession(id) {
+      let sessions = getSavedSessions();
+      sessions = sessions.filter(s => s.id !== id);
+      saveSessions(sessions);
+      renderHistoryModal();
+      if (currentSessionId === id) {
+        currentSessionId = null; // Clear current if deleted
+      }
+    }
+
+    function loadSession(id) {
+      const sessions = getSavedSessions();
+      const session = sessions.find(s => s.id === id);
+      if (!session) return;
+
+      currentSessionId = session.id;
+
+      // Restore main chat HTML
+      document.getElementById('messages').innerHTML = session.mainChatHtml;
+
+      // Ensure the welcome box doesn't duplicate if it was saved
+      const welcome = document.getElementById('welcome');
+      if (welcome && session.mainChatHtml.includes('welcome-icon')) {
+        // keep it
+      }
+
+      // Close history modal
+      document.getElementById('history-modal-overlay').style.display = 'none';
+
+      // Re-initialize editor with saved state
+      const state = session.editorState;
+      if (state && state.files && state.files.length > 0) {
+        openEditorMode(state.files, state.agentName, state.description);
+
+        // Restore specific sandbox state
+        _editorState.sandboxId = state.sandboxId;
+        _editorState.agentChatHistory = state.agentChatHistory || [];
+
+        // If it had a sandbox, show it running (or stopped if E2B evicted it later)
+        if (_editorState.sandboxId) {
+          updateSandboxStatus('running', 'Loaded');
+          termLog('✓ Restored previous session...', 'term-info');
+
+          // Re-render agent chat
+          const chatContainer = document.getElementById('agent-chat-messages');
+          if (chatContainer) {
+            chatContainer.innerHTML = '';
+            _editorState.agentChatHistory.forEach(msg => {
+              const msgDiv = document.createElement('div');
+              msgDiv.className = `agent-chat-msg ${msg.role === 'human' ? 'human' : 'ai'}`;
+
+              let traceBtnHtml = '';
+              if (msg.trace_url || msg.trace_data) {
+                const traceObj = {
+                  trace_url: msg.trace_url,
+                  trace_data: msg.trace_data
+                };
+                const b64Trace = btoa(unescape(encodeURIComponent(JSON.stringify(traceObj))));
+                traceBtnHtml = `<button class="msg-trace-btn" onclick="openTracePane('${b64Trace}')" title="View LangSmith Trace">🛠️ Trace</button>`;
+              }
+
+              msgDiv.innerHTML = `<div class="agent-chat-bubble" style="position: relative;">${marked.parse(msg.content || '')}${traceBtnHtml}</div>`;
+              chatContainer.appendChild(msgDiv);
+            });
+          }
+
+          // Enable input
+          const input = document.getElementById('agent-chat-input');
+          const sendBtn = document.getElementById('agent-chat-send-btn');
+          if (input && sendBtn) {
+            input.disabled = false;
+            sendBtn.disabled = false;
+            document.getElementById('agent-chat-overlay').style.display = 'none';
+          }
+        }
+      }
+    }
 
     // Auto-resize textarea
     function autoResize(el) {
@@ -1263,7 +1807,7 @@
     async function newChat() {
       threadId = null;
       document.getElementById('messages').innerHTML = `
-      <div class="welcome" id="welcome">
+        <div class="welcome" id="welcome">
         <div class="welcome-icon">🦜</div>
         <h1>Chat LangChain</h1>
         <p>Ask anything about LangChain, LangGraph, LangSmith, and building AI applications.</p>
@@ -1344,6 +1888,157 @@
     function scrollToBottom() {
       const msgs = document.getElementById('messages');
       msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function formatTraceDuration(ms) {
+      if (typeof ms !== 'number' || !Number.isFinite(ms) || ms < 0) return 'n/a';
+      if (ms < 1000) return `${ms} ms`;
+      const sec = ms / 1000;
+      if (sec < 60) return `${sec.toFixed(2)} s`;
+      const min = Math.floor(sec / 60);
+      const rem = sec % 60;
+      return `${min}m ${rem.toFixed(1)}s`;
+    }
+
+    function formatTraceTimestamp(iso) {
+      if (!iso) return 'n/a';
+      const ts = Date.parse(iso);
+      if (!Number.isFinite(ts)) return 'n/a';
+      return new Date(ts).toLocaleTimeString();
+    }
+
+    function getTraceRunDepth(run, runMap) {
+      let depth = 0;
+      let parentId = run.parent_run_id;
+      const visited = new Set([run.id]);
+      while (parentId && runMap.has(parentId) && !visited.has(parentId) && depth < 12) {
+        visited.add(parentId);
+        depth += 1;
+        parentId = runMap.get(parentId).parent_run_id;
+      }
+      return depth;
+    }
+
+    function updateLangSmithTrace(traceInfoOrUrl) {
+      const container = document.getElementById('view-langsmith');
+      if (!container) return;
+
+      const traceInfo = typeof traceInfoOrUrl === 'string'
+        ? { trace_url: traceInfoOrUrl }
+        : (traceInfoOrUrl || {});
+
+      const traceUrl = traceInfo.trace_url || traceInfo.url || '';
+      const traceData = traceInfo.trace_data || traceInfo.data || (traceInfo.runs ? traceInfo : null);
+
+      if (!traceUrl && !traceData) {
+        container.innerHTML = `
+          <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px;">
+            Traces will appear here when the agent runs.
+          </div>
+        `;
+        return;
+      }
+
+      const runs = (traceData && Array.isArray(traceData.runs)) ? traceData.runs : [];
+      const runCount = typeof traceData?.run_count === 'number' ? traceData.run_count : runs.length;
+      const errorCount = typeof traceData?.error_count === 'number'
+        ? traceData.error_count
+        : runs.filter(r => r && r.error).length;
+      const totalTokens = traceData?.total_tokens;
+      const rootLatency = traceData?.root_latency_ms;
+
+      const runMap = new Map(runs.filter(r => r && r.id).map(r => [r.id, r]));
+      const sortedRuns = [...runs].sort((a, b) => {
+        const aTime = Date.parse(a?.start_time || '') || 0;
+        const bTime = Date.parse(b?.start_time || '') || 0;
+        if (aTime !== bTime) return aTime - bTime;
+        return (a?.dotted_order || '').localeCompare(b?.dotted_order || '');
+      });
+
+      const summaryHtml = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; border-bottom: 1px solid var(--border); background: var(--bg-primary);">
+          <div style="padding: 8px; border: 1px solid var(--border); border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted);">Runs</div>
+            <div style="font-size: 14px; font-weight: 600;">${runCount || 0}</div>
+          </div>
+          <div style="padding: 8px; border: 1px solid var(--border); border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted);">Errors</div>
+            <div style="font-size: 14px; font-weight: 600; color: ${errorCount ? 'var(--error)' : 'var(--success)'};">${errorCount || 0}</div>
+          </div>
+          <div style="padding: 8px; border: 1px solid var(--border); border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted);">Latency</div>
+            <div style="font-size: 13px; font-weight: 600;">${formatTraceDuration(rootLatency)}</div>
+          </div>
+          <div style="padding: 8px; border: 1px solid var(--border); border-radius: 8px;">
+            <div style="font-size: 11px; color: var(--text-muted);">Tokens</div>
+            <div style="font-size: 13px; font-weight: 600;">${typeof totalTokens === 'number' ? totalTokens : 'n/a'}</div>
+          </div>
+        </div>
+      `;
+
+      const runRowsHtml = sortedRuns.length
+        ? sortedRuns.map(run => {
+          const depth = getTraceRunDepth(run, runMap);
+          const leftPad = Math.min(depth * 14, 84);
+          const hasError = !!run.error;
+          const statusColor = hasError ? 'var(--error)' : 'var(--success)';
+          const typeLabel = run.run_type || 'run';
+          const nameLabel = run.name || '(unnamed)';
+          const latencyLabel = formatTraceDuration(run.latency_ms);
+          const tokenLabel = typeof run.total_tokens === 'number' ? `${run.total_tokens} tok` : '';
+          const errorText = hasError ? escapeHtml(String(run.error).slice(0, 200)) : '';
+          const keys = [
+            ...(Array.isArray(run.input_keys) && run.input_keys.length ? [`in: ${run.input_keys.join(', ')}`] : []),
+            ...(Array.isArray(run.output_keys) && run.output_keys.length ? [`out: ${run.output_keys.join(', ')}`] : []),
+          ].join(' | ');
+          return `
+              <div style="padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <div style="display: flex; align-items: center; gap: 8px; padding-left: ${leftPad}px;">
+                  <span style="width: 8px; height: 8px; border-radius: 999px; background: ${statusColor}; flex-shrink: 0;"></span>
+                  <span style="font-size: 12px; color: var(--text-primary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(nameLabel)}</span>
+                  <span style="font-size: 10px; color: var(--text-muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 6px;">${escapeHtml(typeLabel)}</span>
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); padding-left: ${leftPad + 16}px; margin-top: 2px;">
+                  ${escapeHtml(formatTraceTimestamp(run.start_time))} · ${escapeHtml(latencyLabel)}${tokenLabel ? ` · ${escapeHtml(tokenLabel)}` : ''}
+                </div>
+                ${keys ? `<div style="font-size: 11px; color: var(--text-muted); padding-left: ${leftPad + 16}px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(keys)}</div>` : ''}
+                ${errorText ? `<div style="font-size: 11px; color: var(--error); padding-left: ${leftPad + 16}px; margin-top: 4px;">${errorText}</div>` : ''}
+              </div>
+            `;
+        }).join('')
+        : `
+          <div style="padding: 16px; color: var(--text-muted); font-size: 12px;">
+            Trace captured, but run details are not available for this execution.
+          </div>
+        `;
+
+      container.innerHTML = `
+        <div style="flex: 1; display: flex; flex-direction: column; height: 100%; min-height: 0;">
+          <div style="padding: 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-tertiary);">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 14px;">🛠️</span>
+              <span style="font-size: 12px; font-weight: 600; color: var(--text-primary);">Latest Run Trace</span>
+            </div>
+            ${traceUrl ? `<a href="${traceUrl}" target="_blank" class="history-btn load" style="text-decoration: none; padding: 4px 10px; font-size: 11px; white-space: nowrap;">Open in Smith ↗</a>` : ''}
+          </div>
+          ${summaryHtml}
+          <div style="flex: 1; min-height: 0; overflow-y: auto; background: var(--bg-primary);">
+            ${runRowsHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    function openTracePane(b64TraceRef) {
+      if (!b64TraceRef) return;
+      try {
+        const traceObj = JSON.parse(decodeURIComponent(escape(atob(b64TraceRef))));
+        // Switch to LangSmith Trace tab
+        switchIdeTab('langsmith');
+        updateLangSmithTrace(traceObj);
+      } catch (err) {
+        console.error('Failed to open trace pane:', err);
+      }
     }
 
     function showError(msg) {
@@ -1464,6 +2159,8 @@
     // Global editor state
     let _editorState = {
       files: [],          // {filename, description, content} — mutable
+      originalFiles: [],  // {filename, content} — state at last commit
+      dirtyFiles: new Set(), // Set of filenames that have unsaved changes
       editors: {},        // filename -> CodeMirror instance
       activeIdx: 0,
       sandboxId: null,
@@ -1492,6 +2189,8 @@
 
       // Clone files so we can mutate content (may be empty initially)
       _editorState.files = files.map(f => ({ ...f }));
+      _editorState.originalFiles = files.map(f => ({ filename: f.filename, content: f.content }));
+      _editorState.dirtyFiles = new Set();
       _editorState.editors = {};
       _editorState.activeIdx = 0;
       _editorState.sandboxId = null;
@@ -1523,32 +2222,58 @@
         </div>
         
         <div class="modal-layout">
-          <div class="editor-section">
-            <div class="code-tabs" id="editor-tabs"></div>
-            <div class="code-file-info" id="editor-file-info">
+          <div class="ide-sidebar">
+            <div class="ide-sidebar-header">
+              <div class="ide-sidebar-tab active" id="tab-explorer" onclick="switchIdeTab('explorer')">Explorer</div>
+              <div class="ide-sidebar-tab" id="tab-langsmith" onclick="switchIdeTab('langsmith')">LangSmith Trace</div>
+            </div>
+            <div class="ide-sidebar-content">
+              <!-- Explorer View -->
+              <div class="ide-view active" id="view-explorer">
+                <div id="ide-file-list" style="padding-top: 8px;">
+                  <!-- File items populated by renderIdeExplorer() -->
+                </div>
+              </div>
+              
+              <!-- LangSmith Trace View -->
+              <div class="ide-view" id="view-langsmith">
+                <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px;">
+                  Traces will appear here when the agent runs.
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="editor-main">
+            <div class="code-file-info" id="editor-file-info" style="border-bottom: 1px solid var(--border);">
               <span></span>
               <button class="copy-btn" onclick="copyCurrentFile()">Copy</button>
             </div>
             <div class="editor-split">
               <div class="editor-pane" id="editor-pane"></div>
-              <div class="terminal-resize-bar" id="terminal-resize-bar"></div>
               <div class="terminal-pane" id="terminal-pane">
                 <div class="terminal-header">
                   <span>Terminal</span>
-                  <button class="terminal-clear-btn" onclick="clearTerminal()">Clear</button>
+                  <div class="terminal-controls">
+                    <button class="terminal-icon-btn" onclick="toggleTerminal()" title="Minimize Terminal">_</button>
+                    <button class="terminal-icon-btn" onclick="clearTerminal()">Clear</button>
+                  </div>
                 </div>
                 <div class="terminal-body" id="terminal-body">
                   <div class="term-line term-system">${hasFiles ? 'Ready — click "Run in Sandbox" to deploy and execute your agent' : 'Generating agent files...'}</div>
                 </div>
               </div>
             </div>
-          </div>
+          </div> <!-- Close editor-main -->
           
-          <div class="agent-sidebar">
+          <div class="agent-sidebar" id="agent-sidebar">
             <div class="agent-sidebar-header">
-              <span class="icon">🤖</span> Test Agent
+              <div class="agent-header-title">
+                <span class="icon">🤖</span> Test Agent
+              </div>
+              <button class="terminal-icon-btn" onclick="toggleAgentChat()" title="Minimize Chat">_</button>
             </div>
-            <div style="position: relative; flex: 1; display: flex; flex-direction: column; min-height: 0;">
+            <div style="position: relative; flex: 1; display: flex; flex-direction: column; min-height: 0;" id="agent-chat-body">
               <div id="agent-chat-overlay" class="chat-overlay-msg">
                 <div>Deploy and run the agent in the sandbox first to chat with it.</div>
               </div>
@@ -1568,7 +2293,17 @@
               </div>
             </div>
           </div>
-        </div>
+          
+          <div class="fab-container">
+            <button class="fab-btn" id="fab-agent" onclick="toggleAgentChat()" style="display:none;">
+              <span>🤖</span> Agent Chat
+            </button>
+            <button class="fab-btn" id="fab-terminal" onclick="toggleTerminal()" style="display:none;">
+              <span>⌨️</span> Terminal
+            </button>
+          </div>
+          
+        </div> <!-- Close modal-layout -->
       </div>`;
 
       document.body.appendChild(overlay);
@@ -1576,7 +2311,7 @@
 
       // Render tabs & editor
       if (hasFiles) {
-        renderEditorTabs();
+        renderIdeExplorer();
         openFileInEditor(0);
       } else {
         // Show generating placeholder in the editor pane
@@ -1588,28 +2323,61 @@
           </div>`;
         }
       }
-      // Setup terminal resize
-      setupTerminalResize();
+      _editorState.terminalMinimized = false;
+      _editorState.agentChatMinimized = false;
+      // setupTerminalResize(); removed
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Floating UI Toggles
+    // ═══════════════════════════════════════════════════════
+
+    function toggleTerminal() {
+      const termPane = document.getElementById('terminal-pane');
+      const fabTerm = document.getElementById('fab-terminal');
+      if (!termPane) return;
+
+      _editorState.terminalMinimized = !_editorState.terminalMinimized;
+      if (_editorState.terminalMinimized) {
+        termPane.classList.add('minimized');
+        if (fabTerm) fabTerm.style.display = 'flex';
+      } else {
+        termPane.classList.remove('minimized');
+        if (fabTerm) fabTerm.style.display = 'none';
+        const termBody = document.getElementById('terminal-body');
+        if (termBody) termBody.scrollTop = termBody.scrollHeight;
+      }
+    }
+
+    function toggleAgentChat() {
+      const agentSidebar = document.getElementById('agent-sidebar');
+      const agentBody = document.getElementById('agent-chat-body');
+      const fabAgent = document.getElementById('fab-agent');
+      if (!agentSidebar) return;
+
+      _editorState.agentChatMinimized = !_editorState.agentChatMinimized;
+      if (_editorState.agentChatMinimized) {
+        agentSidebar.classList.add('minimized');
+        if (agentBody) agentBody.style.display = 'none';
+        if (fabAgent) fabAgent.style.display = 'flex';
+      } else {
+        agentSidebar.classList.remove('minimized');
+        if (agentBody) agentBody.style.display = 'flex';
+        if (fabAgent) fabAgent.style.display = 'none';
+      }
     }
 
     /**
-     * Add a single file to the already-open editor modal with a tab animation.
+     * Add a single file to the already-open editor modal.
      * Used by deploySample to stagger files in one-by-one.
      */
     function addFileToEditor(file) {
       _editorState.files.push({ ...file });
-      renderEditorTabs();
+      _editorState.originalFiles.push({ filename: file.filename, content: file.content });
+      renderIdeExplorer();
       // If this is the first file, open it in the editor and clear the placeholder
       if (_editorState.files.length === 1) {
         openFileInEditor(0);
-      }
-      // Animate the new tab
-      const tabsEl = document.getElementById('editor-tabs');
-      if (tabsEl) {
-        const lastTab = tabsEl.lastElementChild;
-        if (lastTab) {
-          lastTab.style.animation = 'fadeIn 0.3s ease';
-        }
       }
       termLog(`  + ${file.filename}`, 'term-info');
     }
@@ -1678,12 +2446,88 @@
       if (btn) btn.style.display = 'none';
     }
 
-    function renderEditorTabs() {
-      const tabsEl = document.getElementById('editor-tabs');
-      if (!tabsEl) return;
-      tabsEl.innerHTML = _editorState.files.map((f, i) =>
-        `<button class="code-tab ${i === _editorState.activeIdx ? 'active' : ''}" onclick="openFileInEditor(${i})">${escapeHtml(f.filename)}</button>`
-      ).join('');
+    function renderIdeExplorer() {
+      const listEl = document.getElementById('ide-file-list');
+      if (!listEl) return;
+
+      listEl.innerHTML = _editorState.files.map((f, i) => {
+        const isDirty = _editorState.dirtyFiles.has(f.filename);
+        return `<div class="explorer-file ${i === _editorState.activeIdx ? 'active' : ''} ${isDirty ? 'dirty' : ''}" onclick="openFileInEditor(${i})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+          ${escapeHtml(f.filename)}
+        </div>`;
+      }).join('');
+    }
+
+    function renderSourceControl() {
+      const listEl = document.getElementById('sc-changes-list');
+      const inputArea = document.getElementById('sc-input-area');
+      const commitBtn = document.getElementById('sc-commit-btn');
+      if (!listEl || !inputArea || !commitBtn) return;
+
+      // Find modified files by comparing current content with originalFiles
+      const modified = [];
+      for (const currentFile of _editorState.files) {
+        // Ensure we compare the latest editor content
+        let content = currentFile.content;
+        if (_editorState.editors[currentFile.filename]) {
+          content = _editorState.editors[currentFile.filename].getValue();
+        }
+
+        const orig = _editorState.originalFiles.find(f => f.filename === currentFile.filename);
+        if (!orig) {
+          modified.push({ filename: currentFile.filename, status: 'A' }); // Added
+        } else if (orig.content !== content) {
+          modified.push({ filename: currentFile.filename, status: 'M' }); // Modified
+        }
+      }
+
+      if (modified.length === 0) {
+        listEl.innerHTML = `<div class="sc-empty">No changes detected.</div>`;
+        inputArea.style.display = 'none';
+      } else {
+        listEl.innerHTML = modified.map(m => `
+          <div class="sc-file ${m.status === 'A' ? 'added' : ''}">
+            <span>${escapeHtml(m.filename)}</span>
+            <span style="font-weight:bold">${m.status}</span>
+          </div>
+        `).join('');
+        inputArea.style.display = 'flex';
+        commitBtn.disabled = false;
+        document.getElementById('sc-commit-msg').value = '';
+      }
+    }
+
+    function switchIdeTab(tab) {
+      document.querySelectorAll('.ide-sidebar-tab').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.ide-view').forEach(el => el.classList.remove('active'));
+
+      document.getElementById(`tab-${tab}`).classList.add('active');
+      document.getElementById(`view-${tab}`).classList.add('active');
+
+      if (tab === 'langsmith') {
+        saveAllEditors();
+      }
+    }
+
+    async function commitAndSync() {
+      const msgInput = document.getElementById('sc-commit-msg');
+      const msg = msgInput ? msgInput.value.trim() || 'Manual Update' : 'Manual Update';
+
+      saveAllEditors();
+
+      // Update original files to the new committed state
+      _editorState.originalFiles = _editorState.files.map(f => ({ filename: f.filename, content: f.content }));
+      _editorState.dirtyFiles.clear();
+
+      // Switch back to Explorer and re-render
+      switchIdeTab('explorer');
+      renderIdeExplorer();
+
+      termLog(`[Commit] ${msg}`, 'term-info');
+
+      // Trigger hot reload with the new files
+      await hotReloadSandbox();
     }
 
     function openFileInEditor(idx) {
@@ -1693,8 +2537,8 @@
       _editorState.activeIdx = idx;
       const file = _editorState.files[idx];
 
-      // Update tabs
-      renderEditorTabs();
+      // Update File Explorer
+      renderIdeExplorer();
 
       // Update file info
       const infoEl = document.getElementById('editor-file-info');
@@ -1732,19 +2576,22 @@
       cm.setValue(file.content);
       _editorState.editors[file.filename] = cm;
 
-      // Add debounced hot reload listener
+      // Cmd+S Explicit Save binding
+      cm.setOption('extraKeys', {
+        'Cmd-S': function (cm) {
+          commitAndSync();
+        },
+        'Ctrl-S': function (cm) {
+          commitAndSync();
+        }
+      });
+
+      // Mark file as dirty on change instead of auto-reloading
       cm.on('change', () => {
-        // Only trigger hot reload if we already have an active sandbox
-        if (!_editorState.sandboxId) return;
-
-        // Visual indicator that we're waiting to sync
-        updateSandboxStatus('running', 'Waiting to sync...');
-
-        clearTimeout(_editorState._reloadTimeout);
-        _editorState._reloadTimeout = setTimeout(() => {
-          saveAllEditors();
-          hotReloadSandbox();
-        }, 1500);
+        if (!_editorState.dirtyFiles.has(file.filename)) {
+          _editorState.dirtyFiles.add(file.filename);
+          renderIdeExplorer();
+        }
       });
 
       // Refresh after DOM settles
@@ -1924,7 +2771,13 @@
         // Parse the sandbox response
         const aiMsgs = (result.messages || []).filter(m => m.type === 'ai');
         const lastAi = aiMsgs[aiMsgs.length - 1];
-        if (!lastAi || !lastAi.content) throw new Error('No response from sandbox agent');
+        if (!lastAi || !lastAi.content) {
+          console.error("Missing AI message content in result:", result);
+          if (result.error) {
+            throw new Error(`Execution failed: ${result.error}`);
+          }
+          throw new Error('No response from sandbox agent');
+        }
 
         const sandboxResult = parseJsonFromAiContent(lastAi.content);
 
@@ -2037,7 +2890,13 @@
         // Parse the sandbox response
         const aiMsgs = (result.messages || []).filter(m => m.type === 'ai');
         const lastAi = aiMsgs[aiMsgs.length - 1];
-        if (!lastAi || !lastAi.content) throw new Error('No response from sandbox agent');
+        if (!lastAi || !lastAi.content) {
+          console.error("Missing AI message content in result:", result);
+          if (result.error) {
+            throw new Error(`Execution failed: ${result.error}`);
+          }
+          throw new Error('No response from sandbox agent');
+        }
 
         const sandboxResult = parseJsonFromAiContent(lastAi.content);
 
@@ -2068,11 +2927,17 @@
         }
 
         if (sandboxResult.error) {
+          if (sandboxResult.error.includes("evicted by E2B") || sandboxResult.error.includes("Paused sandbox") || sandboxResult.error.includes("not found")) {
+            termLog('⟲ Sandbox was paused or evicted due to inactivity. Re-creating sandbox...', 'term-info');
+            _editorState.sandboxId = null;
+            return runInSandbox();
+          }
           termLog(`✗ Error: ${sandboxResult.error}`, 'term-err');
           updateSandboxStatus('stopped', 'Error');
         } else {
           updateSandboxStatus('running', 'Running');
           termLog('✓ Agent synced and running!', 'term-info');
+          saveCurrentSession();
         }
 
       } catch (err) {
@@ -2164,6 +3029,7 @@
         } else {
           updateSandboxStatus('running', 'Running');
           termLog('✓ Agent synced and running!', 'term-info');
+          saveCurrentSession();
         }
 
       } catch (err) {
@@ -2259,12 +3125,69 @@
         // Parse the sandbox response
         const aiMsgs = (result.messages || []).filter(m => m.type === 'ai');
         const lastAi = aiMsgs[aiMsgs.length - 1];
-        if (!lastAi || !lastAi.content) throw new Error('No response from sandbox agent');
+
+        if (!lastAi || !lastAi.content) {
+          console.error("Missing AI message content in result:", result);
+          if (result.error) {
+            throw new Error(`Execution failed: ${result.error}`);
+          }
+          throw new Error('No response from sandbox agent');
+        }
 
         const sandboxResult = parseJsonFromAiContent(lastAi.content);
 
+        // Update LangSmith trace pane with structured data when available.
+        if (sandboxResult.trace_url || sandboxResult.trace_data) {
+          updateLangSmithTrace({
+            trace_url: sandboxResult.trace_url,
+            trace_data: sandboxResult.trace_data
+          });
+        }
+
+        // Render debug steps if they occurred
+        if (sandboxResult.steps && Array.isArray(sandboxResult.steps)) {
+          for (const step of sandboxResult.steps) {
+            const isDebug = step.action === 'debug_fix' || step.action === 'chat_debug_fix';
+            const isRewrite = step.action === 'rewrite_files';
+            const isFixDeps = step.action === 'install_fix_deps';
+
+            if (isDebug) termLog(`⟳ ${step.command || step.action}`, 'term-info');
+            else if (isRewrite) termLog(`✏ ${step.command || step.action}`, 'term-info');
+            else if (isFixDeps) termLog(`📦 ${step.command || step.action}`, 'term-info');
+            else termLog(`⟫ ${step.command || step.action}`, 'term-cmd');
+
+            if (step.stdout) termLog(step.stdout);
+            if (step.stderr) termLog(step.stderr, 'term-err');
+            if (step.exit_code !== undefined && step.exit_code !== 0) {
+              termLog(`✗ Exit code: ${step.exit_code}`, 'term-err');
+            }
+          }
+        }
+
         if (sandboxResult.error) {
-          throw new Error(sandboxResult.error);
+          if (sandboxResult.error.includes("evicted by E2B") || sandboxResult.error.includes("Paused sandbox") || sandboxResult.error.includes("not found")) {
+            termLog('⟲ Sandbox was paused or evicted due to inactivity. Waking up...', 'term-info');
+            _editorState.sandboxId = null;
+            await runInSandbox();
+
+            // Retry the chat request now that we have a fresh sandbox
+            loadingBubble.remove();
+            _editorState.agentChatHistory.pop();
+            const chatContainer = document.getElementById('agent-chat-messages');
+            if (chatContainer && chatContainer.lastChild) {
+              chatContainer.removeChild(chatContainer.lastChild);
+            }
+            input.value = text;
+            input.disabled = false;
+            sendBtn.disabled = false;
+            return sendAgentMessage();
+          }
+
+          termLog(`✗ Chat Error: ${sandboxResult.error}`, 'term-err');
+          if (sandboxResult.stderr) {
+            termLog(`--- Stack Trace ---\n${sandboxResult.stderr}\n-------------------`, 'term-err');
+          }
+          throw new Error('Agent crashed. Check terminal for details.');
         }
 
         // Successfully got message back from the sandbox model
@@ -2273,10 +3196,27 @@
           throw new Error('Sandbox returned empty message object');
         }
 
+        // Add trace info to the response so it gets saved to history
+        if (sandboxResult.trace_url) agentResponse.trace_url = sandboxResult.trace_url;
+        if (sandboxResult.trace_data) agentResponse.trace_data = sandboxResult.trace_data;
+
         // Add to history and update UI
         _editorState.agentChatHistory.push(agentResponse);
         const mdHtml = marked.parse(agentResponse.content || '*(empty response)*');
-        loadingBubble.innerHTML = `<div class="agent-chat-bubble">${mdHtml}</div>`;
+
+        let traceBtnHtml = '';
+        if (sandboxResult.trace_url || sandboxResult.trace_data) {
+          const traceObj = {
+            trace_url: sandboxResult.trace_url,
+            trace_data: sandboxResult.trace_data
+          };
+          // Encode safely for HTML attribute
+          const b64Trace = btoa(unescape(encodeURIComponent(JSON.stringify(traceObj))));
+          traceBtnHtml = `<button class="msg-trace-btn" onclick="openTracePane('${b64Trace}')" title="View LangSmith Trace">🛠️ Trace</button>`;
+        }
+
+        loadingBubble.innerHTML = `<div class="agent-chat-bubble" style="position: relative;">${mdHtml}${traceBtnHtml}</div>`;
+        saveCurrentSession();
 
       } catch (err) {
         console.error('Agent chat error:', err);
@@ -2385,7 +3325,13 @@
 
         // 5) Auto-run the sandbox (no manual click needed)
         termLog('', '');
+
+        // Reset the deploy button state BEFORE sandbox creation so it is not saved as disabled in history
+        btn.disabled = false;
+        btn.innerHTML = 'Deploy';
+
         await runInSandbox();
+        saveCurrentSession();
 
       } catch (err) {
         console.error('Deploy error:', err);
@@ -2614,6 +3560,7 @@
         document.getElementById('sendBtn').disabled = false;
         input.focus();
         scrollToBottom();
+        saveCurrentSession();
       }
     }
 
